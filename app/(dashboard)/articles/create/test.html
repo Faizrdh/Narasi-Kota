@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bergabung sebagai Kontributor — Redaksi Digital</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue: #0057FF;
+    --blue-dark: #0041CC;
+    --blue-light: #E8F0FF;
+    --orange: #FF5A1F;
+    --orange-light: #FFF0EB;
+    --gray-50: #F8F9FB;
+    --gray-100: #EEF0F4;
+    --gray-200: #DDE1E9;
+    --gray-400: #9AA3B2;
+    --gray-600: #5A6478;
+    --gray-800: #1E2535;
+    --white: #ffffff;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+    --shadow-md: 0 4px 16px rgba(0,0,0,.10);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,.14);
+    --radius: 16px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-800);
+    min-height: 100vh;
+  }
+
+  /* ── NAVBAR ── */
+  nav {
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-100);
+    position: sticky; top: 0; z-index: 100;
+    padding: 0 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 68px;
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 8px;
+    text-decoration: none;
+  }
+  .nav-logo-icon {
+    width: 36px; height: 36px;
+    background: var(--blue);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav-logo-icon svg { width: 20px; height: 20px; fill: white; }
+  .nav-logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px; font-weight: 800;
+    color: var(--gray-800);
+    letter-spacing: -.3px;
+  }
+  .nav-logo-text span { color: var(--blue); }
+  .nav-links { display: flex; gap: 32px; }
+  .nav-links a {
+    text-decoration: none; font-size: 14px; font-weight: 500;
+    color: var(--gray-600);
+    transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--blue); }
+  .nav-cta {
+    background: var(--blue); color: white;
+    border: none; padding: 10px 22px;
+    border-radius: 50px; font-size: 14px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    transition: background .2s, transform .15s;
+    text-decoration: none;
+  }
+  .nav-cta:hover { background: var(--blue-dark); transform: translateY(-1px); }
+  .nav-cta svg { width: 16px; height: 16px; }
+
+  /* ── BREADCRUMB ── */
+  .breadcrumb {
+    padding: 14px 60px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--gray-400);
+  }
+  .breadcrumb a { color: var(--blue); text-decoration: none; font-weight: 500; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb-sep { color: var(--gray-200); }
+
+  /* ── MAIN LAYOUT ── */
+  .main-wrap {
+    max-width: 1180px; margin: 0 auto;
+    padding: 0 40px 80px;
+    display: grid; grid-template-columns: 320px 1fr; gap: 32px;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    position: sticky; top: 88px;
+    height: fit-content;
+  }
+  .sidebar-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-100);
+  }
+  .role-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px; font-weight: 800;
+    color: var(--blue);
+    line-height: 1.2;
+    margin-bottom: 24px;
+  }
+  .role-meta { display: flex; flex-direction: column; gap: 14px; margin-bottom: 28px; }
+  .meta-item { display: flex; align-items: center; gap: 12px; }
+  .meta-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: var(--blue-light);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .meta-icon svg { width: 18px; height: 18px; stroke: var(--blue); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .meta-label { font-size: 11px; color: var(--gray-400); font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
+  .meta-value { font-size: 14px; font-weight: 600; color: var(--gray-800); }
+
+  .apply-btn {
+    width: 100%; padding: 14px;
+    background: var(--orange); color: white;
+    border: none; border-radius: 50px;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: background .2s, transform .15s, box-shadow .2s;
+    box-shadow: 0 4px 14px rgba(255,90,31,.3);
+    margin-bottom: 20px;
+  }
+  .apply-btn:hover {
+    background: #E04A10; transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255,90,31,.4);
+  }
+  .apply-btn svg { width: 18px; height: 18px; }
+
+  .selection-notice {
+    background: var(--blue-light);
+    border-left: 3px solid var(--blue);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 12.5px; color: var(--gray-600); line-height: 1.6;
+  }
+  .selection-notice strong { color: var(--blue); }
+
+  /* Role Switcher in sidebar */
+  .role-switcher { margin-top: 20px; }
+  .role-switcher-label { font-size: 11px; color: var(--gray-400); font-weight: 600; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 10px; }
+  .role-btn-group { display: flex; flex-direction: column; gap: 8px; }
+  .role-tab {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-radius: 10px;
+    border: 1.5px solid var(--gray-200);
+    background: var(--white); cursor: pointer;
+    font-size: 13px; font-weight: 500; color: var(--gray-600);
+    transition: all .2s; text-align: left;
+  }
+  .role-tab:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+  .role-tab.active { border-color: var(--blue); background: var(--blue); color: white; }
+  .role-tab .tab-icon { font-size: 16px; }
+
+  /* ── MAIN CONTENT ── */
+  .content-area { padding-top: 4px; }
+  .section-head { margin-bottom: 32px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--blue-light); color: var(--blue);
+    padding: 5px 12px; border-radius: 50px;
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+    margin-bottom: 12px;
+  }
+  .page-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 38px; font-weight: 800;
+    color: var(--gray-800); line-height: 1.15;
+    margin-bottom: 14px;
+  }
+  .page-desc { font-size: 15px; color: var(--gray-600); line-height: 1.7; max-width: 660px; }
+
+  /* ── CONTENT CARD ── */
+  .content-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 32px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-100);
+    animation: fadeIn .35s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+  .card-section-title {
+    font-size: 17px; font-weight: 700; color: var(--gray-800);
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-section-title::before {
+    content: ''; display: block;
+    width: 4px; height: 18px;
+    background: var(--blue); border-radius: 4px;
+  }
+  .role-desc { font-size: 15px; color: var(--gray-600); line-height: 1.75; }
+
+  ul.spec-list { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+  ul.spec-list li {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 14px; color: var(--gray-600); line-height: 1.6;
+  }
+  ul.spec-list li::before {
+    content: '';
+    min-width: 7px; height: 7px;
+    background: var(--blue); border-radius: 50%;
+    margin-top: 7px; flex-shrink: 0;
+  }
+
+  .extra-badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .extra-badge {
+    background: var(--gray-50); border: 1px solid var(--gray-200);
+    color: var(--gray-600); padding: 5px 12px;
+    border-radius: 50px; font-size: 12.5px; font-weight: 500;
+  }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 999;
+    background: rgba(10,15,30,.55);
+    backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--white);
+    border-radius: 20px;
+    width: 100%; max-width: 580px;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    animation: modalIn .3s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes modalIn { from { opacity:0; transform:scale(.92) translateY(20px); } to { opacity:1; transform:scale(1) translateY(0); } }
+
+  .modal-header {
+    padding: 28px 32px 0;
+    display: flex; align-items: flex-start; justify-content: space-between;
+  }
+  .modal-role-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--blue-light); color: var(--blue);
+    padding: 5px 12px; border-radius: 50px;
+    font-size: 12px; font-weight: 700; margin-bottom: 8px;
+  }
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px; font-weight: 800; color: var(--gray-800);
+    line-height: 1.2;
+  }
+  .modal-close {
+    background: var(--gray-100); border: none;
+    width: 36px; height: 36px; border-radius: 50%;
+    cursor: pointer; font-size: 18px; color: var(--gray-600);
+    display: flex; align-items: center; justify-content: center;
+    transition: background .2s, color .2s; flex-shrink: 0; margin-left: 16px;
+  }
+  .modal-close:hover { background: var(--gray-200); color: var(--gray-800); }
+
+  .modal-notice {
+    margin: 16px 32px;
+    background: #FFF8EC; border: 1px solid #FFD970;
+    border-radius: 10px; padding: 12px 16px;
+    font-size: 13px; color: #7A5800; line-height: 1.6;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .modal-notice-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+  .modal-body { padding: 0 32px 28px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-label {
+    font-size: 13px; font-weight: 600; color: var(--gray-800);
+  }
+  .form-label span { color: var(--orange); }
+  .form-input, .form-select, .form-textarea {
+    width: 100%; padding: 11px 14px;
+    border: 1.5px solid var(--gray-200); border-radius: 10px;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--gray-800);
+    background: var(--white);
+    transition: border-color .2s, box-shadow .2s;
+    outline: none;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(0,87,255,.1);
+  }
+  .form-textarea { resize: vertical; min-height: 90px; }
+
+  .upload-area {
+    border: 2px dashed var(--gray-200); border-radius: 10px;
+    padding: 20px; text-align: center; cursor: pointer;
+    transition: border-color .2s, background .2s;
+    position: relative;
+  }
+  .upload-area:hover { border-color: var(--blue); background: var(--blue-light); }
+  .upload-area input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .upload-icon { font-size: 28px; margin-bottom: 6px; }
+  .upload-text { font-size: 13px; color: var(--gray-600); }
+  .upload-text strong { color: var(--blue); }
+  .upload-hint { font-size: 12px; color: var(--gray-400); margin-top: 3px; }
+
+  .modal-footer {
+    padding: 16px 32px 28px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .submit-btn {
+    width: 100%; padding: 14px;
+    background: var(--orange); color: white;
+    border: none; border-radius: 50px;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: background .2s, transform .15s;
+    box-shadow: 0 4px 14px rgba(255,90,31,.3);
+  }
+  .submit-btn:hover { background: #E04A10; transform: translateY(-1px); }
+  .form-terms {
+    font-size: 12.5px; color: var(--gray-400); text-align: center; line-height: 1.6;
+  }
+  .form-terms a { color: var(--blue); text-decoration: none; }
+
+  /* Success State */
+  .success-modal { text-align: center; padding: 48px 32px; }
+  .success-icon {
+    width: 72px; height: 72px;
+    background: #E8FFF0; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px; font-size: 32px;
+  }
+  .success-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px; font-weight: 800; color: var(--gray-800); margin-bottom: 10px;
+  }
+  .success-desc { font-size: 14px; color: var(--gray-600); line-height: 1.7; margin-bottom: 24px; }
+  .success-close {
+    background: var(--blue); color: white;
+    border: none; padding: 12px 28px; border-radius: 50px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: background .2s;
+  }
+  .success-close:hover { background: var(--blue-dark); }
+
+  /* ── SECTION DIVIDER ── */
+  .divider {
+    height: 1px; background: var(--gray-100);
+    margin: 20px 0;
+  }
+
+  @media (max-width: 900px) {
+    .main-wrap { grid-template-columns: 1fr; }
+    .sidebar { position: static; }
+    nav { padding: 0 20px; }
+    .main-wrap { padding: 0 20px 60px; }
+    .breadcrumb { padding: 14px 20px; }
+    .page-title { font-size: 28px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    </div>
+    <span class="nav-logo-text">Redaksi<span>Digital</span></span>
+  </a>
+
+  <div class="nav-links">
+    <a href="#">Tentang Kami</a>
+    <a href="#">Tim Kami</a>
+    <a href="#">Karier</a>
+    <a href="#">Kontak</a>
+  </div>
+
+  <button class="nav-cta" onclick="openModal()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+    Daftar Kontributor
+  </button>
+</nav>
+
+<!-- BREADCRUMB -->
+<div class="breadcrumb">
+  <a href="#">Beranda</a>
+  <span class="breadcrumb-sep">›</span>
+  <a href="#">Kontributor</a>
+  <span class="breadcrumb-sep">›</span>
+  <span id="bc-role">Redaksi / Redaktur</span>
+</div>
+
+<!-- MAIN -->
+<div class="main-wrap">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-card">
+      <div class="role-title" id="sidebar-title">Redaksi / Redaktur</div>
+
+      <div class="role-meta">
+        <div class="meta-item">
+          <div class="meta-icon">
+            <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+          </div>
+          <div>
+            <div class="meta-label">Tipe</div>
+            <div class="meta-value">Kontributor Lepas</div>
+          </div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-icon">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div>
+            <div class="meta-label">Divisi</div>
+            <div class="meta-value">Tim Redaksi</div>
+          </div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-icon">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div>
+            <div class="meta-label">Min. Usia</div>
+            <div class="meta-value" id="sidebar-age">21 Tahun</div>
+          </div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-icon">
+            <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <div>
+            <div class="meta-label">Sistem Kerja</div>
+            <div class="meta-value">Remote / WFA</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="apply-btn" onclick="openModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 16 12 12 16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        Ajukan Lamaran
+      </button>
+
+      <div class="selection-notice">
+        ⚠️ <strong>Pendaftaran melalui seleksi.</strong> Anda tidak langsung mendapat akses. Jika lolos seleksi, email & password akan dikirim ke email Anda.
+      </div>
+
+      <div class="role-switcher">
+        <div class="role-switcher-label">Pilih Role Lain</div>
+        <div class="role-btn-group">
+          <button class="role-tab active" onclick="switchRole('redaksi', this)">
+            <span class="tab-icon">🧑‍💼</span> Redaksi / Redaktur
+          </button>
+          <button class="role-tab" onclick="switchRole('jurnalis', this)">
+            <span class="tab-icon">🎤</span> Jurnalis / Reporter
+          </button>
+          <button class="role-tab" onclick="switchRole('editor', this)">
+            <span class="tab-icon">🧑‍💻</span> Editor
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="content-area" id="main-content">
+
+    <div class="section-head">
+      <div class="badge" id="badge-text">🧑‍💼 Redaksi & Konten</div>
+      <h1 class="page-title" id="main-title">Bergabung sebagai<br>Redaksi / Redaktur</h1>
+      <p class="page-desc" id="main-desc">
+        Jadilah pengelola utama alur produksi konten yang bertanggung jawab atas perencanaan, pengawasan, dan kualitas keseluruhan berita yang dipublikasikan oleh tim kami.
+      </p>
+    </div>
+
+    <!-- Peran -->
+    <div class="content-card" id="card-peran">
+      <div class="card-section-title">Tentang Peran</div>
+      <p class="role-desc" id="desc-peran">
+        Redaksi atau Redaktur merupakan pengelola utama alur produksi konten yang bertanggung jawab terhadap perencanaan, pengawasan, serta kualitas keseluruhan berita yang dipublikasikan. Posisi ini membutuhkan kepemimpinan yang kuat, pemahaman mendalam tentang jurnalistik, serta kemampuan pengambilan keputusan yang cepat dan tepat.
+      </p>
+    </div>
+
+    <!-- Tanggung Jawab -->
+    <div class="content-card">
+      <div class="card-section-title">Tanggung Jawab</div>
+      <ul class="spec-list" id="list-tanggung-jawab">
+        <li>Menentukan agenda dan topik editorial harian/mingguan</li>
+        <li>Mengarahkan penugasan kepada jurnalis</li>
+        <li>Melakukan review akhir terhadap konten sebelum tayang</li>
+        <li>Menjaga konsistensi gaya bahasa dan standar media</li>
+        <li>Mengawasi akurasi, keseimbangan, dan kelayakan berita</li>
+      </ul>
+    </div>
+
+    <!-- Persyaratan -->
+    <div class="content-card">
+      <div class="card-section-title">Persyaratan</div>
+      <ul class="spec-list" id="list-persyaratan">
+        <li>Minimal usia 21 tahun</li>
+        <li>Memiliki pengalaman di bidang jurnalistik/media minimal 2 tahun</li>
+        <li>Memahami prinsip jurnalistik secara menyeluruh (5W+1H, cover both sides, nilai berita)</li>
+        <li>Memiliki kemampuan leadership dan manajemen tim</li>
+        <li>Mampu mengambil keputusan editorial secara objektif dan profesional</li>
+        <li>Menguasai tata bahasa Indonesia dengan sangat baik</li>
+        <li>Melampirkan portofolio karya atau pengalaman di media</li>
+      </ul>
+    </div>
+
+    <!-- Kualifikasi Tambahan -->
+    <div class="content-card">
+      <div class="card-section-title">Kualifikasi Tambahan (Diutamakan)</div>
+      <ul class="spec-list" id="list-kualifikasi">
+        <li>Pernah menjabat sebagai redaktur di media</li>
+        <li>Memahami manajemen konten digital dan workflow redaksi</li>
+        <li>Memiliki wawasan luas terhadap isu nasional maupun lokal</li>
+      </ul>
+      <div class="divider"></div>
+      <div class="extra-badge-row" id="extra-badges">
+        <span class="extra-badge">Manajemen Konten Digital</span>
+        <span class="extra-badge">Workflow Redaksi</span>
+        <span class="extra-badge">Isu Nasional</span>
+        <span class="extra-badge">5W+1H</span>
+        <span class="extra-badge">Leadership</span>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── MODAL ── -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modal-box">
+
+    <!-- SUCCESS STATE (hidden initially) -->
+    <div class="success-modal" id="success-state" style="display:none;">
+      <div class="success-icon">✅</div>
+      <div class="success-title">Lamaran Terkirim!</div>
+      <p class="success-desc">
+        Terima kasih telah mendaftar sebagai kontributor.<br>
+        Tim kami akan meninjau aplikasi Anda. Jika lolos seleksi, <strong>email beserta password akses</strong> akan dikirimkan ke email yang Anda daftarkan.
+      </p>
+      <button class="success-close" onclick="closeModal()">Tutup</button>
+    </div>
+
+    <!-- FORM STATE -->
+    <div id="form-state">
+      <div class="modal-header">
+        <div>
+          <div class="modal-role-badge" id="modal-badge">🧑‍💼 Redaksi / Redaktur</div>
+          <div class="modal-title">Formulir Pendaftaran<br>Kontributor</div>
+        </div>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+
+      <div class="modal-notice">
+        <span class="modal-notice-icon">📧</span>
+        <span>Pendaftaran ini <strong>bukan langsung aktif</strong>. Anda akan melalui proses seleksi. Jika diterima, akun beserta password akan dikirim ke email Anda.</span>
+      </div>
+
+      <div class="modal-body">
+        <form id="apply-form" onsubmit="handleSubmit(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Nama Lengkap <span>*</span></label>
+              <input class="form-input" type="text" placeholder="Nama lengkap Anda" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nomor HP / WA <span>*</span></label>
+              <input class="form-input" type="tel" placeholder="08xx-xxxx-xxxx" required>
+            </div>
+            <div class="form-group full">
+              <label class="form-label">Alamat Email <span>*</span></label>
+              <input class="form-input" type="email" placeholder="contoh@email.com" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tanggal Lahir <span>*</span></label>
+              <input class="form-input" type="date" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Jenis Kelamin</label>
+              <select class="form-select">
+                <option value="">Pilih...</option>
+                <option>Laki-laki</option>
+                <option>Perempuan</option>
+              </select>
+            </div>
+
+            <!-- Dynamic field -->
+            <div class="form-group full" id="field-pengalaman">
+              <label class="form-label" id="label-pengalaman">Pengalaman di Media/Jurnalistik <span>*</span></label>
+              <select class="form-select" required>
+                <option value="">Pilih pengalaman...</option>
+                <option>Kurang dari 1 tahun</option>
+                <option>1–2 tahun</option>
+                <option>2–5 tahun</option>
+                <option>Lebih dari 5 tahun</option>
+              </select>
+            </div>
+
+            <div class="form-group full" id="field-spesialisasi">
+              <label class="form-label" id="label-spesialisasi">Bidang / Spesialisasi <span>*</span></label>
+              <input class="form-input" type="text" id="input-spesialisasi" placeholder="e.g. Politik, Ekonomi, Olahraga..." required>
+            </div>
+
+            <div class="form-group full">
+              <label class="form-label">Motivasi Bergabung <span>*</span></label>
+              <textarea class="form-textarea" placeholder="Ceritakan motivasi Anda bergabung sebagai kontributor..." required></textarea>
+            </div>
+
+            <div class="form-group full">
+              <label class="form-label">Link Portofolio / Tulisan</label>
+              <input class="form-input" type="url" placeholder="https://...">
+            </div>
+
+            <div class="form-group full">
+              <label class="form-label">Upload CV / Portofolio</label>
+              <div class="upload-area">
+                <input type="file" accept=".pdf,.doc,.docx">
+                <div class="upload-icon">📎</div>
+                <div class="upload-text"><strong>Klik untuk upload</strong> atau seret file ke sini</div>
+                <div class="upload-hint">PDF, DOC, DOCX · Maks. 5 MB</div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button class="submit-btn" onclick="handleSubmit(event)">
+          Kirim Lamaran
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+        <p class="form-terms">Dengan mendaftar, Anda menyetujui <a href="#">Kebijakan Privasi</a> dan <a href="#">Ketentuan Kontributor</a> kami.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const roles = {
+    redaksi: {
+      sidebarTitle: 'Redaksi / Redaktur',
+      sidebarAge: '21 Tahun',
+      bcRole: 'Redaksi / Redaktur',
+      badge: '🧑‍💼 Redaksi & Konten',
+      mainTitle: 'Bergabung sebagai<br>Redaksi / Redaktur',
+      mainDesc: 'Jadilah pengelola utama alur produksi konten yang bertanggung jawab atas perencanaan, pengawasan, dan kualitas keseluruhan berita yang dipublikasikan oleh tim kami.',
+      descPeran: 'Redaksi atau Redaktur merupakan pengelola utama alur produksi konten yang bertanggung jawab terhadap perencanaan, pengawasan, serta kualitas keseluruhan berita yang dipublikasikan. Posisi ini membutuhkan kepemimpinan yang kuat, pemahaman mendalam tentang jurnalistik, serta kemampuan pengambilan keputusan yang cepat dan tepat.',
+      tanggungJawab: [
+        'Menentukan agenda dan topik editorial harian/mingguan',
+        'Mengarahkan penugasan kepada jurnalis',
+        'Melakukan review akhir terhadap konten sebelum tayang',
+        'Menjaga konsistensi gaya bahasa dan standar media',
+        'Mengawasi akurasi, keseimbangan, dan kelayakan berita',
+      ],
+      persyaratan: [
+        'Minimal usia 21 tahun',
+        'Memiliki pengalaman di bidang jurnalistik/media minimal 2 tahun',
+        'Memahami prinsip jurnalistik secara menyeluruh (5W+1H, cover both sides, nilai berita)',
+        'Memiliki kemampuan leadership dan manajemen tim',
+        'Mampu mengambil keputusan editorial secara objektif dan profesional',
+        'Menguasai tata bahasa Indonesia dengan sangat baik',
+        'Melampirkan portofolio karya atau pengalaman di media',
+      ],
+      kualifikasi: [
+        'Pernah menjabat sebagai redaktur di media',
+        'Memahami manajemen konten digital dan workflow redaksi',
+        'Memiliki wawasan luas terhadap isu nasional maupun lokal',
+      ],
+      badges: ['Manajemen Konten Digital', 'Workflow Redaksi', 'Isu Nasional', '5W+1H', 'Leadership'],
+      modalBadge: '🧑‍💼 Redaksi / Redaktur',
+      labelPengalaman: 'Pengalaman di Media/Jurnalistik',
+      labelSpesialisasi: 'Topik Editorial yang Dikuasai',
+      placeholderSpesialisasi: 'e.g. Politik, Ekonomi, Isu Lokal...',
+    },
+    jurnalis: {
+      sidebarTitle: 'Jurnalis / Reporter',
+      sidebarAge: '18 Tahun',
+      bcRole: 'Jurnalis / Reporter',
+      badge: '🎤 Peliputan & Berita',
+      mainTitle: 'Bergabung sebagai<br>Jurnalis / Reporter',
+      mainDesc: 'Jadilah garda terdepan dalam mengumpulkan informasi, melakukan peliputan lapangan, dan menyusun berita yang faktual, aktual, dan dapat dipertanggungjawabkan.',
+      descPeran: 'Jurnalis bertugas melakukan peliputan, pengumpulan informasi, serta menyusun berita yang faktual, aktual, dan dapat dipertanggungjawabkan. Anda akan menjadi mata dan telinga lapangan yang menghubungkan peristiwa dengan pembaca melalui tulisan yang jernih dan berimbang.',
+      tanggungJawab: [
+        'Melakukan riset dan peliputan di lapangan atau secara daring',
+        'Mengumpulkan data melalui observasi dan wawancara',
+        'Menulis berita sesuai kaidah jurnalistik',
+        'Menyajikan informasi secara objektif, berimbang, dan akurat',
+        'Mengirimkan naskah sesuai deadline yang ditentukan',
+      ],
+      persyaratan: [
+        'Minimal usia 18 tahun',
+        'Memiliki kemampuan menulis berita dasar yang baik',
+        'Memahami prinsip dasar jurnalistik (5W+1H dan etika pers)',
+        'Mampu melakukan riset dan verifikasi informasi',
+        'Memiliki perangkat kerja (laptop/smartphone dan akses internet)',
+        'Bersedia melakukan peliputan jika dibutuhkan',
+        'Melampirkan minimal 1–2 contoh tulisan berita',
+      ],
+      kualifikasi: [
+        'Memiliki pengalaman liputan atau wawancara',
+        'Memiliki jaringan narasumber',
+        'Aktif mengikuti isu terkini',
+        'Memahami dasar fotografi atau videografi jurnalistik',
+      ],
+      badges: ['Liputan Lapangan', 'Wawancara', 'Verifikasi Fakta', 'Fotografi Dasar', 'Videografi'],
+      modalBadge: '🎤 Jurnalis / Reporter',
+      labelPengalaman: 'Pengalaman Peliputan',
+      labelSpesialisasi: 'Isu / Topik yang Diminati',
+      placeholderSpesialisasi: 'e.g. Sosial, Hukum, Pendidikan...',
+    },
+    editor: {
+      sidebarTitle: 'Editor',
+      sidebarAge: '20 Tahun',
+      bcRole: 'Editor',
+      badge: '🧑‍💻 Penyuntingan & Konten',
+      mainTitle: 'Bergabung sebagai<br>Editor',
+      mainDesc: 'Jadilah penjaga kualitas tulisan dengan memastikan setiap naskah memenuhi standar jurnalistik, bebas kesalahan, dan siap untuk dipublikasikan kepada pembaca.',
+      descPeran: 'Editor bertanggung jawab dalam proses penyuntingan naskah untuk memastikan kualitas tulisan, akurasi data, serta kesesuaian dengan standar jurnalistik sebelum dipublikasikan. Peran ini menuntut ketelitian tinggi, kemampuan analitis, dan pemahaman mendalam terhadap struktur penulisan.',
+      tanggungJawab: [
+        'Menyunting dan memperbaiki naskah dari jurnalis/redaksi',
+        'Memastikan struktur, bahasa, dan alur tulisan sesuai standar',
+        'Melakukan pengecekan fakta (fact-checking)',
+        'Memberikan masukan konstruktif kepada penulis',
+        'Menjamin konten bebas dari kesalahan dan layak tayang',
+      ],
+      persyaratan: [
+        'Minimal usia 20 tahun',
+        'Memiliki pengalaman menulis atau mengedit minimal 1 tahun',
+        'Menguasai tata bahasa Indonesia secara baik dan benar',
+        'Teliti, detail, dan memiliki kemampuan analisis tinggi',
+        'Memahami struktur penulisan berita dan feature',
+        'Melampirkan portofolio tulisan atau hasil editing',
+      ],
+      kualifikasi: [
+        'Berpengalaman sebagai editor media',
+        'Memahami SEO untuk artikel berita digital',
+        'Terbiasa menggunakan CMS atau platform publishing',
+      ],
+      badges: ['Fact-Checking', 'SEO Artikel', 'CMS Publishing', 'Tata Bahasa Indonesia', 'Penyuntingan'],
+      modalBadge: '🧑‍💻 Editor',
+      labelPengalaman: 'Pengalaman Menulis / Editing',
+      labelSpesialisasi: 'Bidang Keahlian Editing',
+      placeholderSpesialisasi: 'e.g. Berita Hard News, Feature, Opini...',
+    },
+  };
+
+  let currentRole = 'redaksi';
+
+  function switchRole(role, el) {
+    currentRole = role;
+    const r = roles[role];
+
+    // sidebar
+    document.getElementById('sidebar-title').textContent = r.sidebarTitle;
+    document.getElementById('sidebar-age').textContent = r.sidebarAge;
+    document.getElementById('bc-role').textContent = r.bcRole;
+
+    // main
+    document.getElementById('badge-text').textContent = r.badge;
+    document.getElementById('main-title').innerHTML = r.mainTitle;
+    document.getElementById('main-desc').textContent = r.mainDesc;
+    document.getElementById('desc-peran').textContent = r.descPeran;
+
+    setList('list-tanggung-jawab', r.tanggungJawab);
+    setList('list-persyaratan', r.persyaratan);
+    setList('list-kualifikasi', r.kualifikasi);
+
+    const badgeRow = document.getElementById('extra-badges');
+    badgeRow.innerHTML = r.badges.map(b => `<span class="extra-badge">${b}</span>`).join('');
+
+    // active tab
+    document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+
+    // scroll to top of content
+    document.querySelector('.content-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function setList(id, items) {
+    const el = document.getElementById(id);
+    el.innerHTML = items.map(i => `<li>${i}</li>`).join('');
+  }
+
+  function openModal() {
+    const r = roles[currentRole];
+    document.getElementById('modal-badge').textContent = r.modalBadge;
+    document.getElementById('label-pengalaman').innerHTML = r.labelPengalaman + ' <span style="color:var(--orange)">*</span>';
+    document.getElementById('label-spesialisasi').innerHTML = r.labelSpesialisasi + ' <span style="color:var(--orange)">*</span>';
+    document.getElementById('input-spesialisasi').placeholder = r.placeholderSpesialisasi;
+    document.getElementById('success-state').style.display = 'none';
+    document.getElementById('form-state').style.display = 'block';
+    document.getElementById('modal-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function handleOverlayClick(e) {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    // Simulate submission
+    document.getElementById('form-state').style.display = 'none';
+    document.getElementById('success-state').style.display = 'block';
+    document.getElementById('modal-box').scrollTop = 0;
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
+</script>
+</body>
+</html>
