@@ -1,46 +1,47 @@
+// app/api/statistics/pageview/route.ts
+// POST  → buat record PageView baru, kembalikan id-nya
+// (id ini digunakan oleh PageViewTracker untuk PATCH nanti)
+
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
- 
-// ── POST: Catat kunjungan baru ───────────────────────────────
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { articleId, visitorId } = body;
- 
+
     if (!articleId || !visitorId) {
       return NextResponse.json(
-        { success: false, message: "articleId dan visitorId wajib diisi" },
+        { success: false, message: "articleId dan visitorId diperlukan" },
         { status: 400 }
       );
     }
- 
-    // Cek artikel ada dan sudah publish
-    const article = await prisma.article.findUnique({
-      where: { id: articleId },
-      select: { id: true, status: true },
+
+    // Pastikan artikel ada dan sudah publish
+    const article = await prisma.article.findFirst({
+      where: { id: articleId, status: "publish" },
+      select: { id: true },
     });
- 
-    if (!article || article.status !== "publish") {
+
+    if (!article) {
       return NextResponse.json(
-        { success: false, message: "Artikel tidak ditemukan atau belum dipublish" },
+        { success: false, message: "Artikel tidak ditemukan" },
         { status: 404 }
       );
     }
- 
-    // Buat record pageview baru
-    // → Ini yang menyebabkan viewsToday & uniqueVisitors bertambah di statistik
+
     const pageView = await prisma.pageView.create({
       data: {
         articleId,
         visitorId,
-        timeSpent: 0,
+        timeSpent:   0,
+        scrollDepth: 0,
+        completed:   false,
       },
+      select: { id: true },
     });
- 
-    return NextResponse.json(
-      { success: true, data: { id: pageView.id } },
-      { status: 201 }
-    );
+
+    return NextResponse.json({ success: true, data: { id: pageView.id } });
   } catch (error) {
     console.error("PageView POST error:", error);
     return NextResponse.json(

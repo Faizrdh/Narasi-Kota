@@ -1,16 +1,16 @@
 // src/app/api/statistics/route.ts
 //
-// ── CHANGELOG ───────────────────────────────────────────────
-// v2 → v3:
-//   1. calcDelta sekarang mengembalikan ABSOLUT (bukan %)
-//      contoh: +2 views, -1 artikel, +5s waktu baca
-//   2. Tambah `trendData` → array {date, views, label} untuk Line Chart
-//      - today  : per jam (00:00–23:00)
-//      - 7d/30d : per hari
-//      - 90d    : per minggu
-//      - all    : per bulan (12 bulan terakhir)
-//   3. Tambah `authorPerformance` → ranking penulis berdasarkan views
-//      dalam periode yang dipilih
+// ── CHANGELOG ─────────────────────────────────────────────────
+// v3 → v4:
+//   1. Tambah period "12m" (12 bulan terakhir dengan date-filter)
+//   2. Tambah `ctrData` → CTR & Headline Performance per artikel
+//      - impressions: berapa kali artikel muncul di feed
+//      - clicks: berapa kali artikel diklik (= pageViews)
+//      - ctr: clicks / impressions × 100%
+//   3. Tambah `engagementMetrics` → metrik keterlibatan pembaca
+//      - bounceRate: % yang keluar < 15 detik
+//      - avgScrollDepth: rata-rata scroll (0–100%)
+//      - completionRate: % yang membaca sampai ≥ 90%
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
@@ -20,7 +20,7 @@ import {
   generateAccessToken,
 } from "@/lib/jwt";
 
-type Period = "today" | "7d" | "30d" | "90d" | "all";
+type Period = "today" | "7d" | "30d" | "90d" | "12m" | "all";
 
 // ── Auth helper ───────────────────────────────────────────────
 async function getUserIdFromRequest(request: NextRequest): Promise<{
@@ -81,6 +81,22 @@ function getPeriodDates(period: Period, now: Date) {
     return { currentStart, currentEnd, prevStart, prevEnd };
   }
 
+  // ── 12m: 12 bulan terakhir ────────────────────────────────
+  if (period === "12m") {
+    const currentStart = new Date(now);
+    currentStart.setFullYear(currentStart.getFullYear() - 1);
+    currentStart.setHours(0, 0, 0, 0);
+
+    const prevEnd = new Date(currentStart);
+    prevEnd.setMilliseconds(-1);
+
+    const prevStart = new Date(prevEnd);
+    prevStart.setFullYear(prevStart.getFullYear() - 1);
+    prevStart.setHours(0, 0, 0, 0);
+
+    return { currentStart, currentEnd, prevStart, prevEnd };
+  }
+
   const daysMap: Record<string, number> = { "7d": 7, "30d": 30, "90d": 90 };
   const days = daysMap[period];
 
@@ -98,17 +114,13 @@ function getPeriodDates(period: Period, now: Date) {
   return { currentStart, currentEnd, prevStart, prevEnd };
 }
 
-// ── Delta ABSOLUT (bukan persentase) ─────────────────────────
-// Mengembalikan: current - previous
-// Contoh: views 5 vs 3 → delta = +2
-//         views 1 vs 3 → delta = -2
+// ── Delta ABSOLUT ─────────────────────────────────────────────
 function calcDelta(current: number, previous: number): number | null {
   if (previous === 0 && current === 0) return null;
   return current - previous;
 }
 
 // ── Build trend data ──────────────────────────────────────────
-// Menghasilkan array time-series lengkap (termasuk titik 0)
 function buildTrendData(
   pvDates: Date[],
   period: Period,
@@ -121,12 +133,12 @@ function buildTrendData(
       return String(d.getHours()).padStart(2, "0") + ":00";
     }
     if (period === "90d") {
-      // Grup ke awal minggu (Minggu)
       const copy = new Date(d);
       copy.setDate(copy.getDate() - copy.getDay());
       return copy.toISOString().split("T")[0];
     }
-    if (period === "all") {
+    // all & 12m → per bulan
+    if (period === "all" || period === "12m") {
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     }
     return d.toISOString().split("T")[0];
@@ -137,7 +149,6 @@ function buildTrendData(
     countMap.set(key, (countMap.get(key) ?? 0) + 1);
   });
 
-  // Generate label lengkap sesuai periode
   let labels: string[] = [];
 
   if (period === "today") {
@@ -162,7 +173,7 @@ function buildTrendData(
     for (let i = 12; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(d.getDate() - i * 7);
-      d.setDate(d.getDate() - d.getDay()); // snap ke awal minggu
+      d.setDate(d.getDate() - d.getDay());
       const key = d.toISOString().split("T")[0];
       if (!seen.has(key)) {
         seen.add(key);
@@ -170,7 +181,7 @@ function buildTrendData(
       }
     }
   } else {
-    // all: 12 bulan terakhir
+    // all & 12m → 12 bulan terakhir
     labels = Array.from({ length: 12 }, (_, i) => {
       const d = new Date(now);
       d.setMonth(d.getMonth() - (11 - i));
@@ -185,7 +196,7 @@ function buildTrendData(
 
   const formatLabel = (key: string): string => {
     if (period === "today") return key;
-    if (period === "all") {
+    if (period === "all" || period === "12m") {
       const [year, month] = key.split("-");
       return `${monthNames[parseInt(month) - 1]} '${year.slice(2)}`;
     }
@@ -215,9 +226,11 @@ export async function GET(request: NextRequest) {
     // 2. Period param
     const url = new URL(request.url);
     const periodParam = url.searchParams.get("period") ?? "all";
-    const period = (["today", "7d", "30d", "90d", "all"].includes(periodParam)
-      ? periodParam
-      : "all") as Period;
+    const period = (
+      ["today", "7d", "30d", "90d", "12m", "all"].includes(periodParam)
+        ? periodParam
+        : "all"
+    ) as Period;
 
     const now = new Date();
     const { currentStart, currentEnd, prevStart, prevEnd } =
@@ -242,17 +255,13 @@ export async function GET(request: NextRequest) {
     const lastWeekEnd = new Date(now);
     lastWeekEnd.setDate(now.getDate() - 7);
 
-    // Filter trend: "all" → 12 bulan terakhir (bukan semua waktu)
+    // Filter trend: "all" → 12 bulan terakhir; "12m" → sama saja sudah filtered
     const trendPvFilter =
       period === "all"
-        ? {
-            createdAt: {
-              gte: new Date(now.getFullYear() - 1, now.getMonth(), 1),
-            },
-          }
+        ? { createdAt: { gte: new Date(now.getFullYear() - 1, now.getMonth(), 1) } }
         : pvFilter;
 
-    // 3. Semua query paralel
+    // 3. Semua query paralel ────────────────────────────────────
     const [
       totalArticles,
       publishedCount,
@@ -269,10 +278,15 @@ export async function GET(request: NextRequest) {
       lastWeekPublished,
       topPageViewsData,
       articlesByCategory,
-      // BARU: semua views per artikel dalam periode (untuk author performance)
       allPeriodViewsRaw,
-      // BARU: raw dates untuk trend chart
       trendRaw,
+      // ── BARU: Engagement ─────────────────────────────────
+      bounceCount,
+      scrollDepthAgg,
+      completedCount,
+      totalWithScrollData,
+      // ── BARU: Impressions per artikel ────────────────────
+      impressionsByArticle,
     ] = await Promise.all([
       prisma.article.count(),
       prisma.article.count({ where: { status: "publish" } }),
@@ -341,7 +355,6 @@ export async function GET(request: NextRequest) {
         orderBy: { _count: { id: "desc" } },
       }),
 
-      // BARU: groupBy articleId tanpa limit (semua, bukan top 10)
       period !== "all"
         ? prisma.pageView.groupBy({
             by: ["articleId"],
@@ -350,22 +363,51 @@ export async function GET(request: NextRequest) {
           })
         : Promise.resolve([]),
 
-      // BARU: raw createdAt untuk trend chart
       prisma.pageView.findMany({
         where: trendPvFilter,
         select: { createdAt: true },
         orderBy: { createdAt: "asc" },
       }),
+
+      // ── Engagement: Bounce (timeSpent < 15s, tapi sudah di-update / > 0) ──
+      prisma.pageView.count({
+        where: { ...pvFilter, timeSpent: { gt: 0, lt: 15 } },
+      }),
+
+      // ── Engagement: Rata-rata scroll depth ───────────────
+      prisma.pageView.aggregate({
+        _avg: { scrollDepth: true },
+        where: { ...pvFilter, scrollDepth: { gt: 0 } },
+      }),
+
+      // ── Engagement: Completed count ───────────────────────
+      prisma.pageView.count({
+        where: { ...pvFilter, completed: true },
+      }),
+
+      // ── Engagement: Total yang sudah update data (timeSpent > 0) ─
+      prisma.pageView.count({
+        where: { ...pvFilter, timeSpent: { gt: 0 } },
+      }),
+
+      // ── CTR: Impressions per artikel dalam periode ─────────
+      prisma.articleImpression.groupBy({
+        by: ["articleId"],
+        where: pvFilter, // filter tanggal yang sama
+        _count: { id: true },
+        orderBy: { _count: { id: "desc" } },
+        take: 20,
+      }),
     ]);
 
-    // 4. Build trend data
+    // 4. Build trend data ──────────────────────────────────────
     const trendData = buildTrendData(
       trendRaw.map((pv) => pv.createdAt),
       period,
       now
     );
 
-    // 5. Author Performance
+    // 5. Author Performance ────────────────────────────────────
     const allPublishedArticles = await prisma.article.findMany({
       where: { status: "publish" },
       select: {
@@ -415,23 +457,14 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.views - a.views)
       .slice(0, 10);
 
-    // 6. Top & Bottom articles
+    // 6. Top & Bottom articles ─────────────────────────────────
     let topArticles: Array<{
-      id: string;
-      title: string;
-      slug: string;
-      views: number;
-      category: string;
-      publishedAt: Date | null;
-      author: { name: string };
+      id: string; title: string; slug: string; views: number;
+      category: string; publishedAt: Date | null; author: { name: string };
     }> = [];
     let bottomArticles: typeof topArticles = [];
     let viewsPerArticle: Array<{
-      id: string;
-      name: string;
-      fullTitle: string;
-      views: number;
-      category: string;
+      id: string; name: string; fullTitle: string; views: number; category: string;
     }> = [];
 
     if (period === "all") {
@@ -463,7 +496,7 @@ export async function GET(request: NextRequest) {
           select: { id: true, title: true, views: true, category: true },
         }),
       ]);
-      topArticles = topRaw;
+      topArticles    = topRaw;
       bottomArticles = bottomRaw;
       viewsPerArticle = barRaw.map((a) => ({
         id: a.id,
@@ -489,7 +522,7 @@ export async function GET(request: NextRequest) {
         const withPeriodViews = articleDetails
           .map((a) => ({ ...a, views: viewsMap.get(a.id) ?? 0 }))
           .sort((a, b) => b.views - a.views);
-        topArticles = withPeriodViews.slice(0, 5);
+        topArticles    = withPeriodViews.slice(0, 5);
         viewsPerArticle = withPeriodViews.slice(0, 10).map((a) => ({
           id: a.id,
           name: a.title.length > 35 ? a.title.substring(0, 35) + "…" : a.title,
@@ -518,7 +551,7 @@ export async function GET(request: NextRequest) {
         .slice(0, 5);
     }
 
-    // 7. Growth (tetap %)
+    // 7. Growth ───────────────────────────────────────────────
     const growth =
       lastWeekPublished > 0
         ? Math.round(
@@ -528,7 +561,7 @@ export async function GET(request: NextRequest) {
         ? 100
         : 0;
 
-    // 8. Avg time read
+    // 8. Avg time read ─────────────────────────────────────────
     const avgTimeSpentSeconds = Math.round(avgTimeData._avg.timeSpent ?? 0);
     const avgMins = Math.floor(avgTimeSpentSeconds / 60);
     const avgSecs = avgTimeSpentSeconds % 60;
@@ -536,13 +569,13 @@ export async function GET(request: NextRequest) {
       avgTimeSpentSeconds > 0 ? `${avgMins}m ${avgSecs}s` : "—";
     const prevAvgSeconds = Math.round(avgTimePrevData._avg.timeSpent ?? 0);
 
-    // 9. Total views all-time
+    // 9. Total views all-time ──────────────────────────────────
     const totalViewsAgg = await prisma.article.aggregate({
       _sum: { views: true },
     });
     const totalViewsAllTime = totalViewsAgg._sum.views ?? 0;
 
-    // 10. Views hari ini
+    // 10. Views hari ini ───────────────────────────────────────
     const todayStart = new Date(
       now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0
     );
@@ -550,22 +583,81 @@ export async function GET(request: NextRequest) {
       where: { createdAt: { gte: todayStart } },
     });
 
-    // 11. Delta ABSOLUT
+    // 11. Delta ABSOLUT ────────────────────────────────────────
     const uniqueCurrent = uniqueVisitorsData.length;
-    const uniquePrev = (
-      uniqueVisitorsPrevData as typeof uniqueVisitorsData
-    ).length;
+    const uniquePrev    = (uniqueVisitorsPrevData as typeof uniqueVisitorsData).length;
 
-    const deltaViews = calcDelta(viewsInPeriod, viewsInPrevPeriod);
-    const deltaUnique = calcDelta(uniqueCurrent, uniquePrev);
-    const deltaPublished = calcDelta(publishedInPeriod, publishedInPrevPeriod);
-    const deltaAvgTime = calcDelta(avgTimeSpentSeconds, prevAvgSeconds);
+    const deltaViews        = calcDelta(viewsInPeriod, viewsInPrevPeriod);
+    const deltaUnique       = calcDelta(uniqueCurrent, uniquePrev);
+    const deltaPublished    = calcDelta(publishedInPeriod, publishedInPrevPeriod);
+    const deltaAvgTime      = calcDelta(avgTimeSpentSeconds, prevAvgSeconds);
 
     const categoryData = articlesByCategory.map((item) => ({
       name: item.category,
       value: item._count.id,
     }));
 
+    // 12. ── ENGAGEMENT METRICS ────────────────────────────────
+    const bounceRate       = totalWithScrollData > 0
+      ? Math.round((bounceCount / totalWithScrollData) * 100)
+      : null;
+    const avgScrollDepth   = Math.round(scrollDepthAgg._avg.scrollDepth ?? 0);
+    const completionRate   = totalWithScrollData > 0
+      ? Math.round((completedCount / totalWithScrollData) * 100)
+      : null;
+
+    const engagementMetrics = {
+      bounceRate,       // % (null jika belum ada data)
+      avgScrollDepth,   // 0–100
+      completionRate,   // % (null jika belum ada data)
+      totalTracked: totalWithScrollData, // total sesi yang sudah ada data scroll
+    };
+
+    // 13. ── CTR & HEADLINE PERFORMANCE ───────────────────────
+    // Gabungkan impressions + clicks per artikel
+    const impressionMap = new Map(
+      (impressionsByArticle as Array<{ articleId: string; _count: { id: number } }>)
+        .map((d) => [d.articleId, d._count.id])
+    );
+    const clicksMap = new Map(
+      topPageViewsData.map((d) => [d.articleId, d._count.id])
+    );
+
+    // Kumpulkan semua unique articleIds dari kedua sumber
+    const ctrCandidateIds = [
+      ...new Set([
+        ...impressionsByArticle.map((d) => d.articleId),
+        ...topPageViewsData.map((d) => d.articleId),
+      ]),
+    ].slice(0, 20);
+
+    let ctrData: Array<{
+      id: string; title: string; category: string;
+      impressions: number; clicks: number; ctr: number;
+    }> = [];
+
+    if (ctrCandidateIds.length > 0) {
+      const ctrArticles = await prisma.article.findMany({
+        where: { id: { in: ctrCandidateIds }, status: "publish" },
+        select: { id: true, title: true, category: true },
+      });
+
+      ctrData = ctrArticles
+        .map((a) => {
+          const impressions = impressionMap.get(a.id) ?? 0;
+          const clicks      = clicksMap.get(a.id) ?? 0;
+          const ctr         =
+            impressions > 0
+              ? Math.round((clicks / impressions) * 1000) / 10 // 1 desimal
+              : 0;
+          return { id: a.id, title: a.title, category: a.category, impressions, clicks, ctr };
+        })
+        .filter((d) => d.impressions > 0 || d.clicks > 0)
+        .sort((a, b) => b.impressions - a.impressions)
+        .slice(0, 10);
+    }
+
+    // 14. Build response ──────────────────────────────────────
     const response = NextResponse.json({
       success: true,
       data: {
@@ -584,18 +676,20 @@ export async function GET(request: NextRequest) {
           lastWeekPublished,
           publishedInPeriod,
           delta: {
-            views: deltaViews,           // absolut: +2, -1, dll
-            uniqueVisitors: deltaUnique, // absolut
-            publishedArticles: deltaPublished, // absolut
-            avgTimeRead: deltaAvgTime,   // absolut (dalam detik)
+            views:             deltaViews,
+            uniqueVisitors:    deltaUnique,
+            publishedArticles: deltaPublished,
+            avgTimeRead:       deltaAvgTime,
           },
         },
         articlesByCategory: categoryData,
         topArticles,
         bottomArticles,
         viewsPerArticle,
-        trendData,         // ← BARU: untuk Line Chart
-        authorPerformance, // ← BARU: ranking penulis
+        trendData,
+        authorPerformance,
+        engagementMetrics, // ← BARU
+        ctrData,           // ← BARU
       },
     });
 

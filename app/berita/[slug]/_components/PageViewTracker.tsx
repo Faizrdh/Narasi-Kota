@@ -8,7 +8,6 @@ interface PageViewTrackerProps {
   articleId: string;
 }
 
-// Ambil atau buat visitorId unik per browser (disimpan di localStorage)
 function getOrCreateVisitorId(): string {
   const key = "nk_visitor_id";
   try {
@@ -24,18 +23,21 @@ function getOrCreateVisitorId(): string {
 }
 
 export default function PageViewTracker({ articleId }: PageViewTrackerProps) {
-  const pageViewIdRef = useRef<string | null>(null);
-  const startTimeRef  = useRef<number>(Date.now());
+  const pageViewIdRef  = useRef<string | null>(null);
+  const startTimeRef   = useRef<number>(Date.now());
+  const maxScrollRef   = useRef<number>(0);   // ← NEW: 0–100
+  const completedRef   = useRef<boolean>(false); // ← NEW
 
   useEffect(() => {
     if (!articleId) return;
 
     const visitorId = getOrCreateVisitorId();
-    startTimeRef.current = Date.now();
+    startTimeRef.current  = Date.now();
     pageViewIdRef.current = null;
+    maxScrollRef.current  = 0;
+    completedRef.current  = false;
 
     // ── STEP 1: Catat kunjungan baru ─────────────────────────
-    // Mengisi tabel page_views → viewsToday & uniqueVisitors bertambah
     fetch("/api/statistics/pageview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -49,37 +51,56 @@ export default function PageViewTracker({ articleId }: PageViewTrackerProps) {
       })
       .catch((err) => console.warn("[PageViewTracker] POST gagal:", err));
 
-    // ── STEP 2: Kirim durasi baca saat halaman ditinggalkan ───
-    // sendBeacon lebih reliable dari fetch saat tab ditutup
-    const sendDuration = () => {
+    // ── STEP 2: Track scroll depth ────────────────────────────
+    const handleScroll = () => {
+      const scrollTop  = window.scrollY || document.documentElement.scrollTop;
+      const docHeight  = document.documentElement.scrollHeight - window.innerHeight;
+      if (docHeight <= 0) return;
+
+      const pct = Math.min(100, Math.round((scrollTop / docHeight) * 100));
+      if (pct > maxScrollRef.current) {
+        maxScrollRef.current = pct;
+        // Tandai sebagai "completed" jika sudah scroll ≥ 90%
+        if (pct >= 90) completedRef.current = true;
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    // ── STEP 3: Kirim data saat halaman ditinggalkan ──────────
+    const sendSessionData = () => {
       const timeSpent = Math.round((Date.now() - startTimeRef.current) / 1000);
-      const pvId = pageViewIdRef.current;
+      const pvId      = pageViewIdRef.current;
 
-      // Abaikan jika < 5 detik (bukan pembaca sungguhan)
-      if (!pvId || timeSpent < 5) return;
+      // Abaikan sesi < 3 detik (bot / tidak sengaja)
+      if (!pvId || timeSpent < 3) return;
 
-      const payload = JSON.stringify({ pageViewId: pvId, timeSpent });
+      const payload = JSON.stringify({
+        pageViewId:  pvId,
+        timeSpent,
+        scrollDepth: maxScrollRef.current,  // ← NEW
+        completed:   completedRef.current,  // ← NEW
+      });
+
       navigator.sendBeacon(
         "/api/statistics/pageview/patch",
         new Blob([payload], { type: "application/json" })
       );
     };
 
-    // Saat tab/window ditutup
-    window.addEventListener("beforeunload", sendDuration);
-    // Saat user switch tab (penting untuk mobile)
+    window.addEventListener("beforeunload", sendSessionData);
     const onVisibilityChange = () => {
-      if (document.visibilityState === "hidden") sendDuration();
+      if (document.visibilityState === "hidden") sendSessionData();
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
-      sendDuration();
-      window.removeEventListener("beforeunload", sendDuration);
+      sendSessionData();
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("beforeunload", sendSessionData);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [articleId]);
 
-  // Komponen ini tidak merender apapun — hanya logic tracking
   return null;
 }

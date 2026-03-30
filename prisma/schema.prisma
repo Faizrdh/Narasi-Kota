@@ -89,27 +89,46 @@ model Article {
   authorId    String
   author      User       @relation(fields: [authorId], references: [id])
   publishedAt DateTime?
-  scheduledAt DateTime?                   // ← BARU: waktu jadwal publikasi otomatis
+  scheduledAt DateTime?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
-  pageViews   PageView[]
 
-  @@index([status, scheduledAt])          // ← index untuk query cron job lebih cepat
+  pageViews   PageView[]
+  impressions ArticleImpression[]
+
+  @@index([status, scheduledAt])
   @@map("articles")
 }
 
 model PageView {
-  id        String   @id @default(cuid())
-  articleId String
-  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  visitorId String
-  timeSpent Int      @default(0)
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  articleId   String
+  article     Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  visitorId   String
+  timeSpent   Int      @default(0)
+  scrollDepth Int      @default(0)   // 0–100 (persentase scroll)
+  completed   Boolean  @default(false) // true jika scrollDepth >= 90%
+  createdAt   DateTime @default(now())
 
   @@index([articleId])
   @@index([visitorId])
   @@index([createdAt])
   @@map("page_views")
+}
+
+model ArticleImpression {
+  id        String   @id @default(cuid())
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  visitorId String?  // nullable; unique constraint di bawah hanya berlaku untuk non-null
+  createdAt DateTime @default(now())
+
+  // ← PERBAIKAN: cegah double-impression per visitor per artikel
+  // PostgreSQL: NULL != NULL → row dengan visitorId null tetap bisa lebih dari satu
+  @@unique([articleId, visitorId])
+  @@index([articleId])
+  @@index([createdAt])
+  @@map("article_impressions")
 }
 
 model ArticleWorkflow {
@@ -151,13 +170,13 @@ model ContributorApplication {
   email          String
   tanggalLahir   DateTime
   jenisKelamin   String?
-  role           String   // "redaksi" | "jurnalis" | "editor"
+  role           String
   pengalaman     String
   spesialisasi   String
   motivasi       String
   portofolioLink String?
   cvFileUrl      String?
-  status         String   @default("pending") // pending | diterima | ditolak
+  status         String   @default("pending")
   catatanAdmin   String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
