@@ -1,13 +1,9 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TYPES
-// ─────────────────────────────────────────────────────────────────────────────
 type RoleKey = "redaksi" | "jurnalis" | "editor";
 
 interface RoleData {
@@ -41,15 +37,12 @@ interface FormState {
   cvFile: File | null;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ROLE DATA
-// ─────────────────────────────────────────────────────────────────────────────
 const roles: Record<RoleKey, RoleData> = {
   redaksi: {
     sidebarTitle: "Redaksi / Redaktur",
     sidebarAge: "21 Tahun",
     bcRole: "Redaksi / Redaktur",
-    badge: " Redaksi & Redaktur",
+    badge: "Redaksi & Redaktur",
     mainTitle: "Bergabung sebagai<br/>Redaksi / Redaktur",
     mainDesc:
       "Jadilah pengelola utama alur produksi konten yang bertanggung jawab atas perencanaan, pengawasan, dan kualitas keseluruhan berita yang dipublikasikan oleh tim kami.",
@@ -158,10 +151,6 @@ const roles: Record<RoleKey, RoleData> = {
   },
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CSS — mirrors original HTML stylesheet 1:1, prefixed with "rd-" to avoid
-// conflicts with Tailwind / global styles in Next.js
-// ─────────────────────────────────────────────────────────────────────────────
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
 
@@ -187,34 +176,75 @@ const CSS = `
     display: flex; align-items: center; gap: 8px;
     text-decoration: none;
   }
-  .rd-nav-logo-icon {
-    width: 36px; height: 36px;
-    background: #0057FF; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .rd-nav-logo-icon svg { width: 20px; height: 20px; fill: white; }
-  .rd-nav-logo-text {
-    font-family: 'Playfair Display', serif;
-    font-size: 18px; font-weight: 800;
-    color: #1E2535; letter-spacing: -.3px;
-  }
-  .rd-nav-logo-text span { color: #0057FF; }
   .rd-nav-links { display: flex; gap: 32px; }
   .rd-nav-links a {
     text-decoration: none; font-size: 14px; font-weight: 500;
     color: #5A6478; transition: color .2s;
   }
-  .rd-nav-links a:hover { color: #0057FF; }
+  .rd-nav-links a:hover, .rd-nav-links a.active { color: #B91C1C; }
   .rd-nav-cta {
-    background: #0057FF; color: white;
+    background: #B91C1C; color: white;
     border: none; padding: 10px 22px;
     border-radius: 50px; font-size: 14px; font-weight: 600;
     cursor: pointer; display: flex; align-items: center; gap: 8px;
     transition: background .2s, transform .15s;
     text-decoration: none; font-family: 'DM Sans', sans-serif;
   }
-  .rd-nav-cta:hover { background: #0041CC; transform: translateY(-1px); }
+  .rd-nav-cta:hover { background: #991B1B; transform: translateY(-1px); }
   .rd-nav-cta svg { width: 16px; height: 16px; }
+
+  /* ── HAMBURGER ── */
+  .rd-hamburger {
+    display: none;
+    flex-direction: column; justify-content: center; align-items: center;
+    gap: 5px; width: 40px; height: 40px;
+    background: none; border: none; cursor: pointer; padding: 4px;
+    border-radius: 8px; transition: background .2s;
+  }
+  .rd-hamburger:hover { background: #FEF2F2; }
+  .rd-hamburger span {
+    display: block; width: 22px; height: 2px;
+    background: #1E2535; border-radius: 2px;
+    transition: all .3s cubic-bezier(.4,0,.2,1);
+    transform-origin: center;
+  }
+  .rd-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .rd-hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+  .rd-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ── MOBILE MENU ── */
+  .rd-mobile-menu {
+    display: none;
+    position: fixed; top: 68px; left: 0; right: 0; z-index: 99;
+    background: #ffffff; border-bottom: 1px solid #EEF0F4;
+    box-shadow: 0 8px 24px rgba(0,0,0,.1);
+    padding: 16px 24px 24px;
+    flex-direction: column; gap: 4px;
+    animation: rdMenuSlide .25s ease;
+  }
+  .rd-mobile-menu.open { display: flex; }
+  @keyframes rdMenuSlide {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .rd-mobile-menu a {
+    text-decoration: none; font-size: 15px; font-weight: 500;
+    color: #5A6478; padding: 12px 8px;
+    border-bottom: 1px solid #F4F5F8;
+    transition: color .2s;
+  }
+  .rd-mobile-menu a:last-of-type { border-bottom: none; }
+  .rd-mobile-menu a:hover { color: #B91C1C; }
+  .rd-mobile-menu-cta {
+    margin-top: 12px;
+    background: #B91C1C; color: white;
+    border: none; padding: 12px 22px;
+    border-radius: 50px; font-size: 14px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+    text-decoration: none; font-family: 'DM Sans', sans-serif;
+    transition: background .2s;
+  }
+  .rd-mobile-menu-cta:hover { background: #991B1B; }
 
   /* ── BREADCRUMB ── */
   .rd-breadcrumb {
@@ -222,7 +252,7 @@ const CSS = `
     display: flex; align-items: center; gap: 8px;
     font-size: 13px; color: #9AA3B2;
   }
-  .rd-breadcrumb a { color: #0057FF; text-decoration: none; font-weight: 500; }
+  .rd-breadcrumb a { color: #B91C1C; text-decoration: none; font-weight: 500; }
   .rd-breadcrumb a:hover { text-decoration: underline; }
   .rd-breadcrumb-sep { color: #DDE1E9; }
 
@@ -246,39 +276,39 @@ const CSS = `
   .rd-role-title {
     font-family: 'Playfair Display', serif;
     font-size: 26px; font-weight: 800;
-    color: #0057FF; line-height: 1.2; margin-bottom: 24px;
+    color: #B91C1C; line-height: 1.2; margin-bottom: 24px;
   }
   .rd-role-meta { display: flex; flex-direction: column; gap: 14px; margin-bottom: 28px; }
   .rd-meta-item { display: flex; align-items: center; gap: 12px; }
   .rd-meta-icon {
     width: 38px; height: 38px; border-radius: 10px;
-    background: #E8F0FF;
+    background: #FEF2F2;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
   .rd-meta-icon svg {
-    width: 18px; height: 18px; stroke: #0057FF; fill: none;
+    width: 18px; height: 18px; stroke: #B91C1C; fill: none;
     stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
   }
   .rd-meta-label { font-size: 11px; color: #9AA3B2; font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
   .rd-meta-value { font-size: 14px; font-weight: 600; color: #1E2535; }
   .rd-apply-btn {
     width: 100%; padding: 14px;
-    background: #FF5A1F; color: white;
+    background: #B91C1C; color: white;
     border: none; border-radius: 50px;
     font-size: 15px; font-weight: 700; font-family: 'DM Sans', sans-serif;
     cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
     transition: background .2s, transform .15s, box-shadow .2s;
-    box-shadow: 0 4px 14px rgba(255,90,31,.3);
+    box-shadow: 0 4px 14px rgba(185,28,28,.3);
     margin-bottom: 20px;
   }
-  .rd-apply-btn:hover { background: #E04A10; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255,90,31,.4); }
+  .rd-apply-btn:hover { background: #991B1B; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(185,28,28,.4); }
   .rd-apply-btn svg { width: 18px; height: 18px; }
   .rd-selection-notice {
-    background: #E8F0FF; border-left: 3px solid #0057FF;
+    background: #FEF2F2; border-left: 3px solid #B91C1C;
     border-radius: 8px; padding: 12px 14px;
     font-size: 12.5px; color: #5A6478; line-height: 1.6;
   }
-  .rd-selection-notice strong { color: #0057FF; }
+  .rd-selection-notice strong { color: #B91C1C; }
   .rd-role-switcher { margin-top: 20px; }
   .rd-role-switcher-label {
     font-size: 11px; color: #9AA3B2; font-weight: 600;
@@ -292,8 +322,8 @@ const CSS = `
     cursor: pointer; font-size: 13px; font-weight: 500; color: #5A6478;
     transition: all .2s; text-align: left; font-family: 'DM Sans', sans-serif;
   }
-  .rd-role-tab:hover { border-color: #0057FF; color: #0057FF; background: #E8F0FF; }
-  .rd-role-tab.active { border-color: #0057FF; background: #0057FF; color: white; }
+  .rd-role-tab:hover { border-color: #B91C1C; color: #B91C1C; background: #FEF2F2; }
+  .rd-role-tab.active { border-color: #B91C1C; background: #B91C1C; color: white; }
   .rd-tab-icon { font-size: 16px; }
 
   /* ── MAIN CONTENT ── */
@@ -301,7 +331,7 @@ const CSS = `
   .rd-section-head { margin-bottom: 32px; }
   .rd-badge {
     display: inline-flex; align-items: center; gap: 6px;
-    background: #E8F0FF; color: #0057FF;
+    background: #FEF2F2; color: #B91C1C;
     padding: 5px 12px; border-radius: 50px;
     font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
     margin-bottom: 12px;
@@ -330,7 +360,7 @@ const CSS = `
   .rd-card-section-title::before {
     content: ''; display: block;
     width: 4px; height: 18px;
-    background: #0057FF; border-radius: 4px;
+    background: #B91C1C; border-radius: 4px;
   }
   .rd-role-desc { font-size: 15px; color: #5A6478; line-height: 1.75; }
   .rd-spec-list { list-style: none; display: flex; flex-direction: column; gap: 9px; padding: 0; margin: 0; }
@@ -340,7 +370,7 @@ const CSS = `
   }
   .rd-spec-list li::before {
     content: ''; min-width: 7px; height: 7px;
-    background: #0057FF; border-radius: 50%;
+    background: #B91C1C; border-radius: 50%;
     margin-top: 7px; flex-shrink: 0;
   }
   .rd-extra-badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
@@ -353,7 +383,7 @@ const CSS = `
   .rd-footer-link {
     text-align: center; font-size: 14px; color: #9AA3B2; margin-top: 24px;
   }
-  .rd-footer-link a { color: #0057FF; font-weight: 600; text-decoration: none; }
+  .rd-footer-link a { color: #B91C1C; font-weight: 600; text-decoration: none; }
   .rd-footer-link a:hover { text-decoration: underline; }
 
   /* ── MODAL ── */
@@ -379,7 +409,7 @@ const CSS = `
   }
   .rd-modal-role-badge {
     display: inline-flex; align-items: center; gap: 6px;
-    background: #E8F0FF; color: #0057FF;
+    background: #FEF2F2; color: #B91C1C;
     padding: 5px 12px; border-radius: 50px;
     font-size: 12px; font-weight: 700; margin-bottom: 8px;
   }
@@ -408,7 +438,7 @@ const CSS = `
   .rd-form-group { display: flex; flex-direction: column; gap: 6px; }
   .rd-form-group.full { grid-column: 1 / -1; }
   .rd-form-label { font-size: 13px; font-weight: 600; color: #1E2535; }
-  .rd-form-label span { color: #FF5A1F; }
+  .rd-form-label span { color: #B91C1C; }
   .rd-form-input, .rd-form-select, .rd-form-textarea {
     width: 100%; padding: 11px 14px;
     border: 1.5px solid #DDE1E9; border-radius: 10px;
@@ -416,7 +446,7 @@ const CSS = `
     background: #ffffff; transition: border-color .2s, box-shadow .2s; outline: none;
   }
   .rd-form-input:focus, .rd-form-select:focus, .rd-form-textarea:focus {
-    border-color: #0057FF; box-shadow: 0 0 0 3px rgba(0,87,255,.1);
+    border-color: #B91C1C; box-shadow: 0 0 0 3px rgba(185,28,28,.1);
   }
   .rd-form-textarea { resize: vertical; min-height: 90px; }
   .rd-upload-area {
@@ -424,11 +454,11 @@ const CSS = `
     padding: 20px; text-align: center; cursor: pointer;
     transition: border-color .2s, background .2s; position: relative;
   }
-  .rd-upload-area:hover { border-color: #0057FF; background: #E8F0FF; }
+  .rd-upload-area:hover { border-color: #B91C1C; background: #FEF2F2; }
   .rd-upload-area input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
   .rd-upload-icon { font-size: 28px; margin-bottom: 6px; }
   .rd-upload-text { font-size: 13px; color: #5A6478; }
-  .rd-upload-text strong { color: #0057FF; }
+  .rd-upload-text strong { color: #B91C1C; }
   .rd-upload-hint { font-size: 12px; color: #9AA3B2; margin-top: 3px; }
   .rd-modal-footer {
     padding: 16px 32px 28px;
@@ -436,16 +466,16 @@ const CSS = `
   }
   .rd-submit-btn {
     width: 100%; padding: 14px;
-    background: #FF5A1F; color: white; border: none; border-radius: 50px;
+    background: #B91C1C; color: white; border: none; border-radius: 50px;
     font-size: 15px; font-weight: 700; font-family: 'DM Sans', sans-serif;
     cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
     transition: background .2s, transform .15s;
-    box-shadow: 0 4px 14px rgba(255,90,31,.3);
+    box-shadow: 0 4px 14px rgba(185,28,28,.3);
   }
-  .rd-submit-btn:hover { background: #E04A10; transform: translateY(-1px); }
+  .rd-submit-btn:hover { background: #991B1B; transform: translateY(-1px); }
   .rd-submit-btn:disabled { opacity: .7; cursor: not-allowed; transform: none; }
   .rd-form-terms { font-size: 12.5px; color: #9AA3B2; text-align: center; line-height: 1.6; }
-  .rd-form-terms a { color: #0057FF; text-decoration: none; }
+  .rd-form-terms a { color: #B91C1C; text-decoration: none; }
   .rd-form-terms a:hover { text-decoration: underline; }
 
   /* Success */
@@ -461,12 +491,12 @@ const CSS = `
   }
   .rd-success-desc { font-size: 14px; color: #5A6478; line-height: 1.7; margin-bottom: 24px; }
   .rd-success-close {
-    background: #0057FF; color: white; border: none;
+    background: #B91C1C; color: white; border: none;
     padding: 12px 28px; border-radius: 50px;
     font-size: 14px; font-weight: 600; cursor: pointer;
     font-family: 'DM Sans', sans-serif; transition: background .2s;
   }
-  .rd-success-close:hover { background: #0041CC; }
+  .rd-success-close:hover { background: #991B1B; }
 
   /* ── RESPONSIVE ── */
   @media (max-width: 900px) {
@@ -477,12 +507,11 @@ const CSS = `
     .rd-page-title { font-size: 28px; }
     .rd-form-grid { grid-template-columns: 1fr; }
     .rd-nav-links { display: none; }
+    .rd-nav-cta { display: none; }
+    .rd-hamburger { display: flex; }
   }
 `;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// APPLICATION MODAL
-// ─────────────────────────────────────────────────────────────────────────────
 function ApplicationModal({
   isOpen,
   onClose,
@@ -539,37 +568,31 @@ function ApplicationModal({
     setFileName(file?.name ?? "");
   };
 
- const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsSubmitting(true);
-  
-  try {
-    const body = new FormData();
-    (Object.keys(form) as Array<keyof FormState>).forEach((k) => {
-      const v = form[k];
-      if (v !== null) body.append(k, v as string | Blob);
-    });
-    body.append("role", currentRole);
-
-    const res = await fetch("/api/contributor/apply", { method: "POST", body });
-    const json = await res.json();
-
-    if (!res.ok || !json.success) {
-      // Tampilkan error ke user
-      alert(json.message ?? "Gagal mengirim lamaran. Coba lagi.");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const body = new FormData();
+      (Object.keys(form) as Array<keyof FormState>).forEach((k) => {
+        const v = form[k];
+        if (v !== null) body.append(k, v as string | Blob);
+      });
+      body.append("role", currentRole);
+      const res = await fetch("/api/contributor/apply", { method: "POST", body });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        alert(json.message ?? "Gagal mengirim lamaran. Coba lagi.");
+        setIsSubmitting(false);
+        return;
+      }
+      setIsSuccess(true);
+    } catch (err) {
+      console.error("Submit error:", err);
+      alert("Terjadi kesalahan jaringan. Periksa koneksi Anda.");
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-
-    // Hanya tampilkan sukses jika benar-benar berhasil
-    setIsSuccess(true);
-  } catch (err) {
-    console.error("Submit error:", err);
-    alert("Terjadi kesalahan jaringan. Periksa koneksi Anda.");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   return (
     <div
@@ -577,8 +600,6 @@ function ApplicationModal({
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="rd-modal">
-
-        {/* ── SUCCESS ── */}
         {isSuccess && (
           <div className="rd-success-modal">
             <div className="rd-success-icon">✅</div>
@@ -592,7 +613,6 @@ function ApplicationModal({
           </div>
         )}
 
-        {/* ── FORM ── */}
         {!isSuccess && (
           <>
             <div className="rd-modal-header">
@@ -602,11 +622,11 @@ function ApplicationModal({
                   Formulir Pendaftaran<br />Kontributor
                 </div>
               </div>
-              <button className="rd-modal-close" onClick={onClose}>x</button>
+              <button className="rd-modal-close" onClick={onClose}>×</button>
             </div>
 
             <div className="rd-modal-notice">
-              <span className="rd-modal-notice-icon"></span>
+              <span className="rd-modal-notice-icon">⚠️</span>
               <span>
                 Pendaftaran ini <strong>bukan langsung aktif</strong>. Anda akan melalui proses seleksi.
                 Jika diterima, akun beserta password akan dikirim ke email Anda.
@@ -616,63 +636,39 @@ function ApplicationModal({
             <div className="rd-modal-body">
               <form id="rd-apply-form" onSubmit={handleSubmit}>
                 <div className="rd-form-grid">
-
-                  {/* Nama */}
                   <div className="rd-form-group">
                     <label className="rd-form-label">Nama Lengkap <span>*</span></label>
-                    <input
-                      className="rd-form-input" name="namaLengkap" value={form.namaLengkap}
-                      onChange={handleChange} type="text" placeholder="Nama lengkap Anda" required
-                    />
+                    <input className="rd-form-input" name="namaLengkap" value={form.namaLengkap}
+                      onChange={handleChange} type="text" placeholder="Nama lengkap Anda" required />
                   </div>
-
-                  {/* HP */}
                   <div className="rd-form-group">
                     <label className="rd-form-label">Nomor HP / WA <span>*</span></label>
-                    <input
-                      className="rd-form-input" name="nomorHP" value={form.nomorHP}
-                      onChange={handleChange} type="tel" placeholder="08xx-xxxx-xxxx" required
-                    />
+                    <input className="rd-form-input" name="nomorHP" value={form.nomorHP}
+                      onChange={handleChange} type="tel" placeholder="08xx-xxxx-xxxx" required />
                   </div>
-
-                  {/* Email */}
                   <div className="rd-form-group full">
                     <label className="rd-form-label">Alamat Email <span>*</span></label>
-                    <input
-                      className="rd-form-input" name="email" value={form.email}
-                      onChange={handleChange} type="email" placeholder="contoh@email.com" required
-                    />
+                    <input className="rd-form-input" name="email" value={form.email}
+                      onChange={handleChange} type="email" placeholder="contoh@email.com" required />
                   </div>
-
-                  {/* Tgl Lahir */}
                   <div className="rd-form-group">
                     <label className="rd-form-label">Tanggal Lahir <span>*</span></label>
-                    <input
-                      className="rd-form-input" name="tanggalLahir" value={form.tanggalLahir}
-                      onChange={handleChange} type="date" required
-                    />
+                    <input className="rd-form-input" name="tanggalLahir" value={form.tanggalLahir}
+                      onChange={handleChange} type="date" required />
                   </div>
-
-                  {/* Jenis Kelamin */}
                   <div className="rd-form-group">
                     <label className="rd-form-label">Jenis Kelamin</label>
-                    <select
-                      className="rd-form-select" name="jenisKelamin" value={form.jenisKelamin}
-                      onChange={handleChange}
-                    >
+                    <select className="rd-form-select" name="jenisKelamin" value={form.jenisKelamin}
+                      onChange={handleChange}>
                       <option value="">Pilih...</option>
                       <option>Laki-laki</option>
                       <option>Perempuan</option>
                     </select>
                   </div>
-
-                  {/* Pengalaman */}
                   <div className="rd-form-group full">
                     <label className="rd-form-label">{role.labelPengalaman} <span>*</span></label>
-                    <select
-                      className="rd-form-select" name="pengalaman" value={form.pengalaman}
-                      onChange={handleChange} required
-                    >
+                    <select className="rd-form-select" name="pengalaman" value={form.pengalaman}
+                      onChange={handleChange} required>
                       <option value="">Pilih pengalaman...</option>
                       <option>Kurang dari 1 tahun</option>
                       <option>1–2 tahun</option>
@@ -680,38 +676,24 @@ function ApplicationModal({
                       <option>Lebih dari 5 tahun</option>
                     </select>
                   </div>
-
-                  {/* Spesialisasi */}
                   <div className="rd-form-group full">
                     <label className="rd-form-label">{role.labelSpesialisasi} <span>*</span></label>
-                    <input
-                      className="rd-form-input" name="spesialisasi" value={form.spesialisasi}
+                    <input className="rd-form-input" name="spesialisasi" value={form.spesialisasi}
                       onChange={handleChange} type="text"
-                      placeholder={role.placeholderSpesialisasi} required
-                    />
+                      placeholder={role.placeholderSpesialisasi} required />
                   </div>
-
-                  {/* Motivasi */}
                   <div className="rd-form-group full">
                     <label className="rd-form-label">Motivasi Bergabung <span>*</span></label>
-                    <textarea
-                      className="rd-form-textarea" name="motivasi" value={form.motivasi}
+                    <textarea className="rd-form-textarea" name="motivasi" value={form.motivasi}
                       onChange={handleChange}
                       placeholder="Ceritakan motivasi Anda bergabung sebagai kontributor..."
-                      required
-                    />
+                      required />
                   </div>
-
-                  {/* Portofolio */}
                   <div className="rd-form-group full">
                     <label className="rd-form-label">Link Portofolio / Tulisan</label>
-                    <input
-                      className="rd-form-input" name="portofolioLink" value={form.portofolioLink}
-                      onChange={handleChange} type="url" placeholder="https://..."
-                    />
+                    <input className="rd-form-input" name="portofolioLink" value={form.portofolioLink}
+                      onChange={handleChange} type="url" placeholder="https://..." />
                   </div>
-
-                  {/* Upload CV */}
                   <div className="rd-form-group full">
                     <label className="rd-form-label">Upload CV / Portofolio</label>
                     <div className="rd-upload-area">
@@ -726,18 +708,12 @@ function ApplicationModal({
                       <div className="rd-upload-hint">PDF, DOC, DOCX · Maks. 5 MB</div>
                     </div>
                   </div>
-
                 </div>
               </form>
             </div>
 
             <div className="rd-modal-footer">
-              <button
-                className="rd-submit-btn"
-                form="rd-apply-form"
-                type="submit"
-                disabled={isSubmitting}
-              >
+              <button className="rd-submit-btn" form="rd-apply-form" type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Mengirim..." : "Kirim Lamaran"}
                 {!isSubmitting && (
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -754,25 +730,22 @@ function ApplicationModal({
             </div>
           </>
         )}
-
       </div>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN PAGE
-// ─────────────────────────────────────────────────────────────────────────────
 export default function RegisterPage() {
   const [currentRole, setCurrentRole] = useState<RoleKey>("redaksi");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const role = roles[currentRole];
 
   const roleTabs: { key: RoleKey; icon: string; label: string }[] = [
-    { key: "redaksi", icon: "", label: "Redaksi / Redaktur" },
-    { key: "jurnalis", icon: "", label: "Jurnalis / Reporter" },
-    { key: "editor", icon: "", label: "Editor" },
+    { key: "redaksi", icon: "📋", label: "Redaksi / Redaktur" },
+    { key: "jurnalis", icon: "🎙️", label: "Jurnalis / Reporter" },
+    { key: "editor", icon: "✏️", label: "Editor" },
   ];
 
   const handleSwitchRole = (r: RoleKey) => {
@@ -782,9 +755,15 @@ export default function RegisterPage() {
     }, 50);
   };
 
+  // Close mobile menu on outside click
+  useEffect(() => {
+    const handler = () => setIsMobileMenuOpen(false);
+    if (isMobileMenuOpen) document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [isMobileMenuOpen]);
+
   return (
     <>
-      {/* Inject scoped CSS */}
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
       <div className="rd-wrap">
@@ -802,12 +781,12 @@ export default function RegisterPage() {
             />
           </Link>
 
-        <div className="rd-nav-links">
-        <Link href="/tentang-kami">Tentang Kami</Link>   {/* ← pakai Link Next.js */}
-        <a href="/tim-kami">Tim Kami</a>
-        <a href="#">Karier</a>
-        <a href="#">Kontak</a>
-      </div>
+          <div className="rd-nav-links">
+            <Link href="/tentang-kami">Tentang Kami</Link>
+            <a href="/tim-kami">Tim Kami</a>
+            <a href="#">Karier</a>
+            <a href="#">Kontak</a>
+          </div>
 
           <button className="rd-nav-cta" onClick={() => setIsModalOpen(true)}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -818,7 +797,35 @@ export default function RegisterPage() {
             </svg>
             Daftar Kontributor
           </button>
+
+          {/* Hamburger */}
+          <button
+            className={`rd-hamburger${isMobileMenuOpen ? " open" : ""}`}
+            onClick={(e) => { e.stopPropagation(); setIsMobileMenuOpen((v) => !v); }}
+            aria-label="Toggle menu"
+          >
+            <span />
+            <span />
+            <span />
+          </button>
         </nav>
+
+        {/* Mobile Menu */}
+        <div
+          className={`rd-mobile-menu${isMobileMenuOpen ? " open" : ""}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Link href="/tentang-kami" onClick={() => setIsMobileMenuOpen(false)}>Tentang Kami</Link>
+          <a href="/tim-kami" onClick={() => setIsMobileMenuOpen(false)}>Tim Kami</a>
+          <a href="#" onClick={() => setIsMobileMenuOpen(false)}>Karier</a>
+          <a href="#" onClick={() => setIsMobileMenuOpen(false)}>Kontak</a>
+          <button
+            className="rd-mobile-menu-cta"
+            onClick={() => { setIsMobileMenuOpen(false); setIsModalOpen(true); }}
+          >
+            Daftar Kontributor
+          </button>
+        </div>
 
         {/* ── BREADCRUMB ── */}
         <div className="rd-breadcrumb">
@@ -838,54 +845,36 @@ export default function RegisterPage() {
               <div className="rd-role-title">{role.sidebarTitle}</div>
 
               <div className="rd-role-meta">
-                {/* Tipe */}
                 <div className="rd-meta-item">
                   <div className="rd-meta-icon">
-                    <svg viewBox="0 0 24 24">
-                      <rect x="2" y="7" width="20" height="14" rx="2" />
-                      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-                    </svg>
+                    <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" /></svg>
                   </div>
                   <div>
                     <div className="rd-meta-label">Tipe</div>
                     <div className="rd-meta-value">Kontributor Lepas</div>
                   </div>
                 </div>
-                {/* Divisi */}
                 <div className="rd-meta-item">
                   <div className="rd-meta-icon">
-                    <svg viewBox="0 0 24 24">
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                      <circle cx="9" cy="7" r="4" />
-                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                    </svg>
+                    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
                   </div>
                   <div>
                     <div className="rd-meta-label">Divisi</div>
                     <div className="rd-meta-value">Tim Redaksi</div>
                   </div>
                 </div>
-                {/* Min. Usia */}
                 <div className="rd-meta-item">
                   <div className="rd-meta-icon">
-                    <svg viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="10" />
-                      <polyline points="12 6 12 12 16 14" />
-                    </svg>
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
                   </div>
                   <div>
                     <div className="rd-meta-label">Min. Usia</div>
                     <div className="rd-meta-value">{role.sidebarAge}</div>
                   </div>
                 </div>
-                {/* Sistem Kerja */}
                 <div className="rd-meta-item">
                   <div className="rd-meta-icon">
-                    <svg viewBox="0 0 24 24">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                      <circle cx="12" cy="10" r="3" />
-                    </svg>
+                    <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
                   </div>
                   <div>
                     <div className="rd-meta-label">Sistem Kerja</div>
@@ -896,11 +885,9 @@ export default function RegisterPage() {
 
               <button className="rd-apply-btn" onClick={() => setIsModalOpen(true)}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 8 16 12 12 16" />
-                  <line x1="8" y1="12" x2="16" y2="12" />
+                  <circle cx="12" cy="12" r="10" /><polyline points="12 8 16 12 12 16" /><line x1="8" y1="12" x2="16" y2="12" />
                 </svg>
-                Ajukan Lamaran
+                Ajukan Kontributor
               </button>
 
               <div className="rd-selection-notice">
@@ -909,7 +896,6 @@ export default function RegisterPage() {
                 Anda tidak langsung mendapat akses. Jika lolos seleksi, email &amp; password akan dikirim ke email Anda.
               </div>
 
-              {/* Role Switcher */}
               <div className="rd-role-switcher">
                 <div className="rd-role-switcher-label">Pilih Role Lain</div>
                 <div className="rd-role-btn-group">
@@ -932,20 +918,15 @@ export default function RegisterPage() {
           <main className="rd-content-area">
             <div className="rd-section-head">
               <div className="rd-badge">{role.badge}</div>
-              <h1
-                className="rd-page-title"
-                dangerouslySetInnerHTML={{ __html: role.mainTitle }}
-              />
+              <h1 className="rd-page-title" dangerouslySetInnerHTML={{ __html: role.mainTitle }} />
               <p className="rd-page-desc">{role.mainDesc}</p>
             </div>
 
-            {/* Tentang Peran */}
             <div className="rd-content-card">
               <div className="rd-card-section-title">Tentang Peran</div>
               <p className="rd-role-desc">{role.descPeran}</p>
             </div>
 
-            {/* Tanggung Jawab */}
             <div className="rd-content-card">
               <div className="rd-card-section-title">Tanggung Jawab</div>
               <ul className="rd-spec-list">
@@ -953,7 +934,6 @@ export default function RegisterPage() {
               </ul>
             </div>
 
-            {/* Persyaratan */}
             <div className="rd-content-card">
               <div className="rd-card-section-title">Persyaratan</div>
               <ul className="rd-spec-list">
@@ -961,7 +941,6 @@ export default function RegisterPage() {
               </ul>
             </div>
 
-            {/* Kualifikasi Tambahan */}
             <div className="rd-content-card">
               <div className="rd-card-section-title">Kualifikasi Tambahan (Diutamakan)</div>
               <ul className="rd-spec-list">
@@ -975,7 +954,6 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Footer link */}
             <p className="rd-footer-link">
               Sudah punya akun?{" "}
               <Link href="/login">Login di sini</Link>
@@ -984,7 +962,6 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* ── MODAL ── */}
       <ApplicationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

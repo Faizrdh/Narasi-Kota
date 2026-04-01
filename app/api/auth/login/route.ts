@@ -115,19 +115,19 @@ export async function POST(request: NextRequest) {
     );
 
     response.cookies.set("accessToken", accessToken, {
-  httpOnly: false,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "strict",
-  maxAge: 15 * 60, // ← 600 detik = 10 menit (sebelumnya 1 hari)
-  path: "/",
-});
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 15 * 60, // ← 600 detik = 10 menit (sebelumnya 1 hari)
+      path: "/",
+    });
 
     // ── Set cookie refreshToken (HTTP-only, lebih aman) ─────────
     response.cookies.set("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: rememberMe ? 30 * 24 * 60 * 60 : 7 * 24 * 60 * 60,
+      maxAge: 15 * 60, // ← 600 detik = 10 menit (sebelumnya 1 hari)
       path: "/",
     });
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CSS
+// CSS — Red palette (selaras dengan tentang-kami page)
 // ─────────────────────────────────────────────────────────────────────────────
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
@@ -33,28 +33,28 @@ const CSS = `
     text-decoration: none; font-size: 14px; font-weight: 500;
     color: #5A6478; transition: color .2s;
   }
-  .tm-nav-links a:hover, .tm-nav-links a.active { color: #0057FF; }
+  .tm-nav-links a:hover, .tm-nav-links a.active { color: #B91C1C; }
   .tm-nav-cta {
-    background: #0057FF; color: white; border: none; padding: 10px 22px;
+    background: #B91C1C; color: white; border: none; padding: 10px 22px;
     border-radius: 50px; font-size: 14px; font-weight: 600; cursor: pointer;
     display: flex; align-items: center; gap: 8px;
     transition: background .2s, transform .15s;
     text-decoration: none; font-family: 'Inter', sans-serif;
   }
-  .tm-nav-cta:hover { background: #0041CC; transform: translateY(-1px); }
+  .tm-nav-cta:hover { background: #991B1B; transform: translateY(-1px); }
 
   /* ── BREADCRUMB ── */
   .tm-breadcrumb {
     padding: 14px 60px; display: flex; align-items: center; gap: 8px;
     font-size: 13px; color: #9AA3B2;
   }
-  .tm-breadcrumb a { color: #0057FF; text-decoration: none; font-weight: 500; }
+  .tm-breadcrumb a { color: #B91C1C; text-decoration: none; font-weight: 500; }
   .tm-breadcrumb a:hover { text-decoration: underline; }
   .tm-breadcrumb-sep { color: #DDE1E9; }
 
   /* ── HERO ── */
   .tm-hero {
-    background: linear-gradient(135deg, #0057FF 0%, #003DBF 100%);
+    background: linear-gradient(135deg, #B91C1C 0%, #7F1D1D 100%);
     padding: 80px 60px 90px; position: relative; overflow: hidden;
   }
   .tm-hero::before {
@@ -74,7 +74,7 @@ const CSS = `
     font-size: 52px; font-weight: 900; color: #ffffff;
     line-height: 1.1; margin-bottom: 20px; letter-spacing: -2px;
   }
-  .tm-hero-title span { color: #FFD95A; }
+  .tm-hero-title span { color: #FCA5A5; }
   .tm-hero-desc {
     font-size: 15px; color: rgba(255,255,255,.82); line-height: 1.8;
     max-width: 600px; font-weight: 400;
@@ -96,7 +96,7 @@ const CSS = `
 
   /* ── SECTION LABEL ── */
   .tm-section-label {
-    display: inline-flex; align-items: center; gap: 6px; background: #E8F0FF; color: #0057FF;
+    display: inline-flex; align-items: center; gap: 6px; background: #FEF2F2; color: #B91C1C;
     padding: 4px 12px; border-radius: 50px; font-size: 11px; font-weight: 700;
     text-transform: uppercase; letter-spacing: .8px; margin-bottom: 12px;
   }
@@ -120,19 +120,19 @@ const CSS = `
     position: sticky; top: 90px;
     transition: box-shadow .3s, transform .3s;
   }
-  .tm-avatar-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,87,255,.12); }
+  .tm-avatar-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(185,28,28,.12); }
 
   .tm-avatar-ring {
     width: 120px; height: 120px; border-radius: 50%;
-    background: linear-gradient(135deg, #0057FF, #00BFFF);
+    background: linear-gradient(135deg, #B91C1C, #EF4444);
     display: flex; align-items: center; justify-content: center;
     margin-bottom: 20px; position: relative;
-    box-shadow: 0 8px 32px rgba(0,87,255,.3);
+    box-shadow: 0 8px 32px rgba(185,28,28,.3);
     animation: tm-pulse-ring 3s ease-in-out infinite;
   }
   @keyframes tm-pulse-ring {
-    0%, 100% { box-shadow: 0 8px 32px rgba(0,87,255,.3); }
-    50% { box-shadow: 0 8px 48px rgba(0,87,255,.55); }
+    0%, 100% { box-shadow: 0 8px 32px rgba(185,28,28,.3); }
+    50% { box-shadow: 0 8px 48px rgba(185,28,28,.55); }
   }
   .tm-avatar-initials {
     font-size: 38px; font-weight: 900; color: #ffffff; letter-spacing: -2px; line-height: 1;
@@ -149,19 +149,19 @@ const CSS = `
 
   .tm-avatar-name { font-size: 18px; font-weight: 800; color: #1E2535; letter-spacing: -.4px; margin-bottom: 4px; }
   .tm-avatar-role {
-    font-size: 12px; font-weight: 600; color: #0057FF; text-transform: uppercase;
+    font-size: 12px; font-weight: 600; color: #B91C1C; text-transform: uppercase;
     letter-spacing: .8px; margin-bottom: 20px;
   }
   .tm-avatar-divider { width: 100%; height: 1px; background: #EEF0F4; margin-bottom: 20px; }
 
   .tm-avatar-tag {
     display: inline-flex; align-items: center; gap: 6px;
-    background: #E8F0FF; color: #0057FF; padding: 5px 12px; border-radius: 50px;
+    background: #FEF2F2; color: #B91C1C; padding: 5px 12px; border-radius: 50px;
     font-size: 11px; font-weight: 600; margin: 3px;
     transition: background .2s, transform .2s, color .2s;
     cursor: default;
   }
-  .tm-avatar-tag:hover { background: #0057FF; color: #fff; transform: scale(1.05); }
+  .tm-avatar-tag:hover { background: #B91C1C; color: #fff; transform: scale(1.05); }
   .tm-avatar-tags { display: flex; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
 
   .tm-avatar-status {
@@ -183,11 +183,11 @@ const CSS = `
     transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s, border-color .2s;
     position: relative; overflow: hidden;
   }
-  .tm-bio-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,.09); border-color: #C8D8FF; }
-  .tm-bio-card-accent { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #0057FF, #00BFFF); }
+  .tm-bio-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,.09); border-color: #FECACA; }
+  .tm-bio-card-accent { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #B91C1C, #EF4444); }
 
   .tm-bio-card-label {
-    font-size: 11px; font-weight: 700; color: #0057FF; text-transform: uppercase;
+    font-size: 11px; font-weight: 700; color: #B91C1C; text-transform: uppercase;
     letter-spacing: .8px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
   }
   .tm-bio-card-text { font-size: 14px; color: #5A6478; line-height: 1.8; font-weight: 400; }
@@ -203,13 +203,13 @@ const CSS = `
     transition: background .2s, border-color .2s, transform .2s;
     cursor: default;
   }
-  .tm-approach-item:hover { background: #EEF3FF; border-color: #C8D8FF; transform: translateX(4px); }
+  .tm-approach-item:hover { background: #FFF5F5; border-color: #FECACA; transform: translateX(4px); }
   .tm-approach-icon {
-    width: 32px; height: 32px; border-radius: 9px; background: #EEF3FF;
+    width: 32px; height: 32px; border-radius: 9px; background: #FEF2F2;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     transition: background .2s;
   }
-  .tm-approach-item:hover .tm-approach-icon { background: #0057FF; }
+  .tm-approach-item:hover .tm-approach-icon { background: #B91C1C; }
   .tm-approach-item:hover .tm-approach-icon svg { stroke: #ffffff !important; }
 
   /* ── STACK ── */
@@ -227,7 +227,7 @@ const CSS = `
     background: var(--accent); transform: scaleX(0); transform-origin: left;
     transition: transform .3s cubic-bezier(.22,1,.36,1);
   }
-  .tm-stack-card:hover { transform: translateY(-5px); box-shadow: 0 14px 32px rgba(0,0,0,.1); border-color: #C8D8FF; }
+  .tm-stack-card:hover { transform: translateY(-5px); box-shadow: 0 14px 32px rgba(0,0,0,.1); border-color: #FECACA; }
   .tm-stack-card:hover::after { transform: scaleX(1); }
   .tm-stack-icon {
     width: 44px; height: 44px; border-radius: 12px;
@@ -241,33 +241,33 @@ const CSS = `
 
   /* ── NOTE ── */
   .tm-note {
-    background: linear-gradient(135deg, #F0F7FF 0%, #E8EEFF 100%);
+    background: linear-gradient(135deg, #FFF5F5 0%, #FEF2F2 100%);
     border-radius: 20px; padding: 36px 40px;
-    border: 1px solid #C8D8FF; margin-bottom: 44px;
+    border: 1px solid #FECACA; margin-bottom: 44px;
     display: flex; align-items: flex-start; gap: 20px;
-    box-shadow: 0 4px 16px rgba(0,87,255,.08);
+    box-shadow: 0 4px 16px rgba(185,28,28,.08);
     transition: transform .25s, box-shadow .25s;
   }
-  .tm-note:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(0,87,255,.13); }
+  .tm-note:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(185,28,28,.13); }
   .tm-note-icon {
-    width: 48px; height: 48px; border-radius: 14px; background: #0057FF; flex-shrink: 0;
+    width: 48px; height: 48px; border-radius: 14px; background: #B91C1C; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 6px 18px rgba(0,87,255,.3);
+    box-shadow: 0 6px 18px rgba(185,28,28,.3);
   }
   .tm-note-title { font-size: 16px; font-weight: 700; color: #1E2535; margin-bottom: 8px; letter-spacing: -.2px; }
   .tm-note-text { font-size: 14px; color: #5A6478; line-height: 1.8; font-weight: 400; }
 
   /* ── CTA ── */
   .tm-cta-banner {
-    background: linear-gradient(135deg, #FF5A1F 0%, #E04A10 100%);
+    background: linear-gradient(135deg, #991B1B 0%, #7F1D1D 100%);
     border-radius: 20px; padding: 48px;
     display: flex; align-items: center; justify-content: space-between; gap: 32px;
-    box-shadow: 0 8px 32px rgba(255,90,31,.3);
+    box-shadow: 0 8px 32px rgba(185,28,28,.3);
   }
   .tm-cta-title { font-size: 26px; font-weight: 800; color: #ffffff; margin-bottom: 6px; letter-spacing: -.4px; }
   .tm-cta-desc { font-size: 15px; color: rgba(255,255,255,.8); font-weight: 400; }
   .tm-cta-btn {
-    background: #ffffff; color: #FF5A1F; border: none; padding: 13px 30px; border-radius: 50px;
+    background: #ffffff; color: #B91C1C; border: none; padding: 13px 30px; border-radius: 50px;
     font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif;
     white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
     transition: transform .15s, box-shadow .2s; box-shadow: 0 4px 14px rgba(0,0,0,.15);
@@ -280,7 +280,7 @@ const CSS = `
     display: flex; align-items: center; justify-content: space-between;
     font-size: 13px; color: #9AA3B2; font-weight: 400;
   }
-  .tm-footer a { color: #0057FF; text-decoration: none; font-weight: 500; }
+  .tm-footer a { color: #B91C1C; text-decoration: none; font-weight: 500; }
   .tm-footer a:hover { text-decoration: underline; }
 
   /* ── RESPONSIVE ── */
@@ -350,13 +350,13 @@ const Ico = {
       <polyline points="12 5 19 12 12 19" />
     </svg>
   ),
-  Code: ({ size = 18, color = "#0057FF" }: IconProps) => (
+  Code: ({ size = 18, color = "#B91C1C" }: IconProps) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="16 18 22 12 16 6" />
       <polyline points="8 6 2 12 8 18" />
     </svg>
   ),
-  Server: ({ size = 18, color = "#0057FF" }: IconProps) => (
+  Server: ({ size = 18, color = "#EA580C" }: IconProps) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="2" width="20" height="8" rx="2" />
       <rect x="2" y="14" width="20" height="8" rx="2" />
@@ -364,35 +364,35 @@ const Ico = {
       <line x1="6" y1="18" x2="6.01" y2="18" />
     </svg>
   ),
-  Monitor: ({ size = 18, color = "#0057FF" }: IconProps) => (
+  Monitor: ({ size = 18, color = "#B91C1C" }: IconProps) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="3" width="20" height="14" rx="2" />
       <line x1="8" y1="21" x2="16" y2="21" />
       <line x1="12" y1="17" x2="12" y2="21" />
     </svg>
   ),
-  Layout: ({ size = 18, color = "#0057FF" }: IconProps) => (
+  Layout: ({ size = 18, color = "#12C264" }: IconProps) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="3" width="18" height="18" rx="2" />
       <line x1="3" y1="9" x2="21" y2="9" />
       <line x1="9" y1="21" x2="9" y2="9" />
     </svg>
   ),
-  Database: ({ size = 18, color = "#0057FF" }: IconProps) => (
+  Database: ({ size = 18, color = "#B91C1C" }: IconProps) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <ellipse cx="12" cy="5" rx="9" ry="3" />
       <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
       <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
     </svg>
   ),
-  Globe: ({ size = 18, color = "#0057FF" }: IconProps) => (
+  Globe: ({ size = 18, color = "#B91C1C" }: IconProps) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10" />
       <line x1="2" y1="12" x2="22" y2="12" />
       <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
     </svg>
   ),
-  Layers: ({ size = 18, color = "#0057FF" }: IconProps) => (
+  Layers: ({ size = 18, color = "#B91C1C" }: IconProps) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polygon points="12 2 2 7 12 12 22 7 12 2" />
       <polyline points="2 17 12 22 22 17" />
@@ -404,7 +404,7 @@ const Ico = {
       <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
     </svg>
   ),
-  FileText: ({ size = 18, color = "#0057FF" }: IconProps) => (
+  FileText: ({ size = 18, color = "#B91C1C" }: IconProps) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
       <polyline points="14 2 14 8 20 8" />
@@ -440,24 +440,24 @@ const tags: string[] = [
 ];
 
 const approachItems: ApproachItem[] = [
-  { icon: <Ico.Layers size={16} color="#0057FF" />, label: "Struktur sistem yang terorganisir" },
-  { icon: <Ico.Monitor size={16} color="#0057FF" />, label: "Pengalaman pengguna (UX) yang optimal" },
-  { icon: <Ico.Layout size={16} color="#0057FF" />, label: "Desain antarmuka yang modern dan responsif" },
-  { icon: <Ico.Database size={16} color="#0057FF" />, label: "Efisiensi dalam pengelolaan data dan konten" },
+  { icon: <Ico.Layers size={16} color="#B91C1C" />, label: "Struktur sistem yang terorganisir" },
+  { icon: <Ico.Monitor size={16} color="#B91C1C" />, label: "Pengalaman pengguna (UX) yang optimal" },
+  { icon: <Ico.Layout size={16} color="#B91C1C" />, label: "Desain antarmuka yang modern dan responsif" },
+  { icon: <Ico.Database size={16} color="#B91C1C" />, label: "Efisiensi dalam pengelolaan data dan konten" },
 ];
 
 const stackItems: StackItem[] = [
   {
-    icon: <Ico.Globe size={20} color="#0057FF" />,
-    iconBg: "#EEF3FF",
-    accent: "#0057FF",
+    icon: <Ico.Globe size={20} color="#B91C1C" />,
+    iconBg: "#FEF2F2",
+    accent: "#B91C1C",
     name: "Frontend",
     desc: "React, Next.js, Tailwind CSS, HTML/CSS",
   },
   {
-    icon: <Ico.Server size={20} color="#FF5A1F" />,
-    iconBg: "#FFF0EA",
-    accent: "#FF5A1F",
+    icon: <Ico.Server size={20} color="#EA580C" />,
+    iconBg: "#FFF7ED",
+    accent: "#EA580C",
     name: "Backend",
     desc: "Node.js, REST API, Database Management",
   },
@@ -589,7 +589,7 @@ export default function TimKamiPage(): React.JSX.Element {
                 <div className="tm-bio-card tm-reveal tm-reveal-d1">
                   <div className="tm-bio-card-accent" />
                   <div className="tm-bio-card-label">
-                    <Ico.Code size={14} color="#0057FF" /> Tentang
+                    <Ico.Code size={14} color="#B91C1C" /> Tentang
                   </div>
                   <p className="tm-bio-card-text">
                     Sebagai pengembang utama di balik NarasiKota, saya bertanggung jawab penuh atas
@@ -625,7 +625,7 @@ export default function TimKamiPage(): React.JSX.Element {
                 <div className="tm-bio-card tm-reveal tm-reveal-d3">
                   <div className="tm-bio-card-accent" />
                   <div className="tm-bio-card-label">
-                    <Ico.FileText size={14} color="#0057FF" /> Visi Pengembang
+                    <Ico.FileText size={14} color="#B91C1C" /> Visi Pengembang
                   </div>
                   <p className="tm-bio-card-text">
                     Melalui NarasiKota, saya tidak hanya membangun sebuah platform, tetapi juga
@@ -702,7 +702,7 @@ export default function TimKamiPage(): React.JSX.Element {
 
         {/* FOOTER */}
         <footer className="tm-footer">
-          <span>© 2025 NarasiKota. Proyek portofolio mandiri.</span>
+          <span>© 2026 NarasiKota. Proyek portofolio mandiri.</span>
           <span>
             <a href="/register">Daftar Kontributor</a>{" · "}
             <a href="#">Kebijakan Privasi</a>{" · "}

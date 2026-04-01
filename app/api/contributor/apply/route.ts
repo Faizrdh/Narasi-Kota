@@ -1,88 +1,58 @@
+// src/app/api/contributor/apply/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth-server";
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const formData = await request.formData();
 
-    // ── Debug log — bisa dihapus setelah konfirmasi berjalan ──
-    console.log("[pelamar API] user from token:", user);
+    const namaLengkap    = formData.get("namaLengkap") as string | null;
+    const nomorHP        = formData.get("nomorHP") as string | null;
+    const email          = formData.get("email") as string | null;
+    const tanggalLahir   = formData.get("tanggalLahir") as string | null;
+    const jenisKelamin   = formData.get("jenisKelamin") as string | null;
+    const role           = formData.get("role") as string | null;
+    const pengalaman     = formData.get("pengalaman") as string | null;
+    const spesialisasi   = formData.get("spesialisasi") as string | null;
+    const motivasi       = formData.get("motivasi") as string | null;
+    const portofolioLink = formData.get("portofolioLink") as string | null;
+    const cvFile         = formData.get("cvFile") as File | null;
 
-    if (!user) {
+    // Validasi field wajib
+    if (!namaLengkap || !nomorHP || !email || !tanggalLahir || !role || !pengalaman || !spesialisasi || !motivasi) {
       return NextResponse.json(
-        { success: false, message: "Token tidak valid atau tidak ditemukan" },
-        { status: 401 }
+        { success: false, message: "Field wajib tidak boleh kosong" },
+        { status: 400 }
       );
     }
 
-    // Normalisasi role — handle "SUPER_ADMIN", "super_admin", dll
-    const normalizedRole = user.role?.toUpperCase().replace(/[-\s]/g, "_");
-    if (normalizedRole !== "SUPER_ADMIN") {
-      return NextResponse.json(
-        { success: false, message: `Akses ditolak. Role Anda: ${user.role}` },
-        { status: 403 }
-      );
-    }
+    // Opsional: simpan nama file CV (tanpa upload ke storage dulu)
+    const cvFileUrl = cvFile && cvFile.size > 0 ? cvFile.name : null;
 
-    const { searchParams } = request.nextUrl;
-    const status = searchParams.get("status") ?? "";
-    const role   = searchParams.get("role")   ?? "";
-    const search = searchParams.get("search") ?? "";
-    const page   = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
-    const limit  = 10;
-
-    // ── Build filter ─────────────────────────────────────────
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {};
-    if (status) where.status = status;
-    if (role)   where.role   = role;
-    if (search) {
-      where.OR = [
-        { namaLengkap: { contains: search, mode: "insensitive" } },
-        { email:       { contains: search, mode: "insensitive" } },
-      ];
-    }
-
-    const [total, applications] = await Promise.all([
-      prisma.contributorApplication.count({ where }),
-      prisma.contributorApplication.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-    ]);
-
-    const [totalAll, totalPending, totalDiterima, totalDitolak] = await Promise.all([
-      prisma.contributorApplication.count(),
-      prisma.contributorApplication.count({ where: { status: "pending"  } }),
-      prisma.contributorApplication.count({ where: { status: "diterima" } }),
-      prisma.contributorApplication.count({ where: { status: "ditolak"  } }),
-    ]);
-
-    return NextResponse.json({
-      success: true,
+    const application = await prisma.contributorApplication.create({
       data: {
-        applications,
-        pagination: {
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit) || 1,
-        },
-        stats: {
-          total: totalAll,
-          pending: totalPending,
-          diterima: totalDiterima,
-          ditolak: totalDitolak,
-        },
+        namaLengkap,
+        nomorHP,
+        email,
+        tanggalLahir:   new Date(tanggalLahir),
+        jenisKelamin:   jenisKelamin || null,
+        role,
+        pengalaman,
+        spesialisasi,
+        motivasi,
+        portofolioLink: portofolioLink || null,
+        cvFileUrl,
+        status:         "pending",
       },
     });
+
+    return NextResponse.json({ success: true, data: application }, { status: 201 });
+
   } catch (error) {
-    console.error("[contributor/applications] Error:", error);
+    console.error("[POST /api/contributor/apply]", error);
     return NextResponse.json(
-      { success: false, message: "Terjadi kesalahan server", detail: String(error) },
+      { success: false, message: "Gagal menyimpan lamaran", detail: String(error) },
       { status: 500 }
     );
   }

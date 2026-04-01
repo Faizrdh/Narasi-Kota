@@ -1,12 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CSS
-// ─────────────────────────────────────────────────────────────────────────────
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
@@ -33,28 +30,81 @@ const CSS = `
     text-decoration: none; font-size: 14px; font-weight: 500;
     color: #5A6478; transition: color .2s;
   }
-  .tk-nav-links a:hover, .tk-nav-links a.active { color: #0057FF; }
+  .tk-nav-links a:hover, .tk-nav-links a.active { color: #B91C1C; }
   .tk-nav-cta {
-    background: #0057FF; color: white; border: none; padding: 10px 22px;
+    background: #B91C1C; color: white; border: none; padding: 10px 22px;
     border-radius: 50px; font-size: 14px; font-weight: 600; cursor: pointer;
     display: flex; align-items: center; gap: 8px;
     transition: background .2s, transform .15s;
     text-decoration: none; font-family: 'Inter', sans-serif;
   }
-  .tk-nav-cta:hover { background: #0041CC; transform: translateY(-1px); }
+  .tk-nav-cta:hover { background: #991B1B; transform: translateY(-1px); }
+
+  /* ── HAMBURGER ── */
+  .tk-hamburger {
+    display: none;
+    flex-direction: column; justify-content: center; align-items: center;
+    gap: 5px; width: 40px; height: 40px;
+    background: none; border: none; cursor: pointer; padding: 4px;
+    border-radius: 8px; transition: background .2s;
+  }
+  .tk-hamburger:hover { background: #FEF2F2; }
+  .tk-hamburger span {
+    display: block; width: 22px; height: 2px;
+    background: #1E2535; border-radius: 2px;
+    transition: all .3s cubic-bezier(.4,0,.2,1);
+    transform-origin: center;
+  }
+  .tk-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .tk-hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+  .tk-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ── MOBILE MENU ── */
+  .tk-mobile-menu {
+    display: none;
+    position: fixed; top: 68px; left: 0; right: 0; z-index: 99;
+    background: #ffffff; border-bottom: 1px solid #EEF0F4;
+    box-shadow: 0 8px 24px rgba(0,0,0,.1);
+    padding: 16px 24px 24px;
+    flex-direction: column; gap: 4px;
+    animation: tkMenuSlide .25s ease;
+  }
+  .tk-mobile-menu.open { display: flex; }
+  @keyframes tkMenuSlide {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .tk-mobile-menu a {
+    text-decoration: none; font-size: 15px; font-weight: 500;
+    color: #5A6478; padding: 12px 8px;
+    border-bottom: 1px solid #F4F5F8;
+    transition: color .2s;
+  }
+  .tk-mobile-menu a:last-of-type { border-bottom: none; }
+  .tk-mobile-menu a:hover, .tk-mobile-menu a.active { color: #B91C1C; }
+  .tk-mobile-menu-cta {
+    margin-top: 12px;
+    background: #B91C1C; color: white;
+    border: none; padding: 12px 22px;
+    border-radius: 50px; font-size: 14px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    text-decoration: none; font-family: 'Inter', sans-serif;
+    transition: background .2s;
+  }
+  .tk-mobile-menu-cta:hover { background: #991B1B; }
 
   /* ── BREADCRUMB ── */
   .tk-breadcrumb {
     padding: 14px 60px; display: flex; align-items: center; gap: 8px;
     font-size: 13px; color: #9AA3B2;
   }
-  .tk-breadcrumb a { color: #0057FF; text-decoration: none; font-weight: 500; }
+  .tk-breadcrumb a { color: #B91C1C; text-decoration: none; font-weight: 500; }
   .tk-breadcrumb a:hover { text-decoration: underline; }
   .tk-breadcrumb-sep { color: #DDE1E9; }
 
   /* ── HERO ── */
   .tk-hero {
-    background: linear-gradient(135deg, #0057FF 0%, #003DBF 100%);
+    background: linear-gradient(135deg, #B91C1C 0%, #7F1D1D 100%);
     padding: 80px 60px 90px; position: relative; overflow: hidden;
   }
   .tk-hero::before {
@@ -75,7 +125,7 @@ const CSS = `
     font-size: 52px; font-weight: 900; color: #ffffff;
     line-height: 1.1; margin-bottom: 20px; letter-spacing: -2px;
   }
-  .tk-hero-title span { color: #FFD95A; }
+  .tk-hero-title span { color: #FCA5A5; }
   .tk-hero-desc {
     font-size: 15px; color: rgba(255,255,255,.82); line-height: 1.8; max-width: 560px; font-weight: 400;
   }
@@ -89,7 +139,7 @@ const CSS = `
   }
   .tk-hero-stat { margin-bottom: 16px; }
   .tk-hero-stat:last-child { margin-bottom: 0; }
-  .tk-hero-stat-num { font-size: 38px; font-weight: 900; color: #FFD95A; line-height: 1; letter-spacing: -2px; }
+  .tk-hero-stat-num { font-size: 38px; font-weight: 900; color: #FCA5A5; line-height: 1; letter-spacing: -2px; }
   .tk-hero-stat-label { font-size: 13px; color: rgba(255,255,255,.65); margin-top: 4px; font-weight: 400; }
   .tk-hero-divider { height: 1px; background: rgba(255,255,255,.12); margin: 16px 0; }
 
@@ -98,7 +148,7 @@ const CSS = `
 
   /* ── SECTION LABEL ── */
   .tk-section-label {
-    display: inline-flex; align-items: center; gap: 6px; background: #E8F0FF; color: #0057FF;
+    display: inline-flex; align-items: center; gap: 6px; background: #FEF2F2; color: #B91C1C;
     padding: 4px 12px; border-radius: 50px; font-size: 11px; font-weight: 700;
     text-transform: uppercase; letter-spacing: .8px; margin-bottom: 12px;
   }
@@ -126,7 +176,7 @@ const CSS = `
     border: 1px solid #EEF0F4; box-shadow: 0 2px 16px rgba(0,0,0,.05);
   }
   .tk-intro-right-title {
-    font-size: 11px; font-weight: 700; color: #0057FF;
+    font-size: 11px; font-weight: 700; color: #B91C1C;
     text-transform: uppercase; letter-spacing: .8px; margin-bottom: 8px;
   }
 
@@ -136,14 +186,14 @@ const CSS = `
     padding: 14px 12px; border-radius: 12px;
     transition: background .2s, transform .2s; cursor: default;
   }
-  .tk-feature-item:hover { background: #F0F5FF; transform: translateX(4px); }
+  .tk-feature-item:hover { background: #FFF5F5; transform: translateX(4px); }
   .tk-feature-icon {
-    width: 42px; height: 42px; border-radius: 12px; background: #EEF3FF;
+    width: 42px; height: 42px; border-radius: 12px; background: #FEF2F2;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     transition: background .2s, box-shadow .2s;
   }
   .tk-feature-item:hover .tk-feature-icon {
-    background: #0057FF; box-shadow: 0 6px 16px rgba(0,87,255,.25);
+    background: #B91C1C; box-shadow: 0 6px 16px rgba(185,28,28,.25);
   }
   .tk-feature-icon svg { transition: stroke .2s; }
   .tk-feature-item:hover .tk-feature-icon svg { stroke: #ffffff !important; }
@@ -159,13 +209,13 @@ const CSS = `
     transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s, border-color .2s;
     position: relative; overflow: hidden; cursor: default;
   }
-  .tk-value-card:hover { transform: translateY(-6px); box-shadow: 0 16px 36px rgba(0,0,0,.1); border-color: #C8D8FF; }
-  .tk-value-card:nth-child(2):hover { border-color: #FFDAC8; box-shadow: 0 16px 36px rgba(255,90,31,.12); }
+  .tk-value-card:hover { transform: translateY(-6px); box-shadow: 0 16px 36px rgba(0,0,0,.1); border-color: #FECACA; }
+  .tk-value-card:nth-child(2):hover { border-color: #FED7AA; box-shadow: 0 16px 36px rgba(234,88,12,.12); }
   .tk-value-card:nth-child(3):hover { border-color: #C0F0D8; box-shadow: 0 16px 36px rgba(18,194,100,.1); }
   .tk-value-card:nth-child(4):hover { border-color: #DDD0FF; box-shadow: 0 16px 36px rgba(155,92,246,.1); }
   .tk-value-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
-  .tk-value-card:nth-child(1) .tk-value-bar { background: #0057FF; }
-  .tk-value-card:nth-child(2) .tk-value-bar { background: #FF5A1F; }
+  .tk-value-card:nth-child(1) .tk-value-bar { background: #B91C1C; }
+  .tk-value-card:nth-child(2) .tk-value-bar { background: #EA580C; }
   .tk-value-card:nth-child(3) .tk-value-bar { background: #12C264; }
   .tk-value-card:nth-child(4) .tk-value-bar { background: #9B5CF6; }
   .tk-value-icon-wrap {
@@ -174,8 +224,8 @@ const CSS = `
     transition: transform .25s;
   }
   .tk-value-card:hover .tk-value-icon-wrap { transform: scale(1.08); }
-  .tk-value-card:nth-child(1) .tk-value-icon-wrap { background: #EEF3FF; }
-  .tk-value-card:nth-child(2) .tk-value-icon-wrap { background: #FFF0EA; }
+  .tk-value-card:nth-child(1) .tk-value-icon-wrap { background: #FEF2F2; }
+  .tk-value-card:nth-child(2) .tk-value-icon-wrap { background: #FFF7ED; }
   .tk-value-card:nth-child(3) .tk-value-icon-wrap { background: #E8FAF0; }
   .tk-value-card:nth-child(4) .tk-value-icon-wrap { background: #F0EBFF; }
   .tk-value-name { font-size: 16px; font-weight: 700; color: #1E2535; margin-bottom: 8px; letter-spacing: -.2px; }
@@ -190,14 +240,14 @@ const CSS = `
     transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s;
   }
   .tk-vismis-card:hover { transform: translateY(-4px); box-shadow: 0 14px 32px rgba(0,0,0,.1); }
-  .tk-vismis-card.visi { background: linear-gradient(140deg, #0057FF 0%, #003DBF 100%); }
+  .tk-vismis-card.visi { background: linear-gradient(140deg, #B91C1C 0%, #7F1D1D 100%); }
   .tk-vismis-card.misi { background: #ffffff; }
   .tk-vismis-label {
     font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px;
     margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
   }
   .tk-vismis-card.visi .tk-vismis-label { color: rgba(255,255,255,.6); }
-  .tk-vismis-card.misi .tk-vismis-label { color: #0057FF; }
+  .tk-vismis-card.misi .tk-vismis-label { color: #B91C1C; }
   .tk-vismis-label-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
   .tk-vismis-card.visi .tk-vismis-content {
     font-size: 20px; font-weight: 700; color: #ffffff; line-height: 1.6; letter-spacing: -.3px;
@@ -205,7 +255,7 @@ const CSS = `
   .tk-misi-list { list-style: none; display: flex; flex-direction: column; gap: 14px; }
   .tk-misi-item { display: flex; align-items: flex-start; gap: 12px; font-size: 14px; color: #5A6478; line-height: 1.65; font-weight: 400; }
   .tk-misi-num {
-    width: 22px; height: 22px; border-radius: 50%; background: #E8F0FF; color: #0057FF;
+    width: 22px; height: 22px; border-radius: 50%; background: #FEF2F2; color: #B91C1C;
     font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; margin-top: 2px;
   }
@@ -221,15 +271,15 @@ const CSS = `
     transition: border-color .2s, transform .2s, box-shadow .2s, background .2s; cursor: default;
   }
   .tk-focus-chip:hover {
-    border-color: #0057FF; transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0,87,255,.1); background: #F5F8FF;
+    border-color: #B91C1C; transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(185,28,28,.1); background: #FFF5F5;
   }
   .tk-focus-chip-icon {
-    width: 38px; height: 38px; border-radius: 10px; background: #EEF3FF;
+    width: 38px; height: 38px; border-radius: 10px; background: #FEF2F2;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     transition: background .2s, box-shadow .2s;
   }
-  .tk-focus-chip:hover .tk-focus-chip-icon { background: #0057FF; box-shadow: 0 4px 12px rgba(0,87,255,.3); }
+  .tk-focus-chip:hover .tk-focus-chip-icon { background: #B91C1C; box-shadow: 0 4px 12px rgba(185,28,28,.3); }
   .tk-focus-chip:hover .tk-focus-chip-icon svg { stroke: #ffffff !important; }
 
   /* ── DISCLAIMER ── */
@@ -258,15 +308,15 @@ const CSS = `
 
   /* ── CTA BANNER ── */
   .tk-cta-banner {
-    background: linear-gradient(135deg, #FF5A1F 0%, #E04A10 100%);
+    background: linear-gradient(135deg, #991B1B 0%, #7F1D1D 100%);
     border-radius: 20px; padding: 48px;
     display: flex; align-items: center; justify-content: space-between; gap: 32px;
-    box-shadow: 0 8px 32px rgba(255,90,31,.3);
+    box-shadow: 0 8px 32px rgba(185,28,28,.3);
   }
   .tk-cta-title { font-size: 26px; font-weight: 800; color: #ffffff; margin-bottom: 6px; letter-spacing: -.4px; }
   .tk-cta-desc { font-size: 15px; color: rgba(255,255,255,.8); font-weight: 400; }
   .tk-cta-btn {
-    background: #ffffff; color: #FF5A1F; border: none; padding: 13px 30px; border-radius: 50px;
+    background: #ffffff; color: #B91C1C; border: none; padding: 13px 30px; border-radius: 50px;
     font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif;
     white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
     transition: transform .15s, box-shadow .2s; box-shadow: 0 4px 14px rgba(0,0,0,.15);
@@ -279,7 +329,7 @@ const CSS = `
     display: flex; align-items: center; justify-content: space-between;
     font-size: 13px; color: #9AA3B2; font-weight: 400;
   }
-  .tk-footer a { color: #0057FF; text-decoration: none; font-weight: 500; }
+  .tk-footer a { color: #B91C1C; text-decoration: none; font-weight: 500; }
   .tk-footer a:hover { text-decoration: underline; }
 
   /* ── RESPONSIVE ── */
@@ -298,6 +348,8 @@ const CSS = `
     .tk-cta-banner { flex-direction: column; text-align: center; padding: 36px 24px; }
     .tk-footer { flex-direction: column; gap: 8px; text-align: center; padding: 24px 20px; }
     .tk-nav-links { display: none; }
+    .tk-nav-cta { display: none; }
+    .tk-hamburger { display: flex; }
   }
   @media (max-width: 560px) {
     .tk-values-grid { grid-template-columns: 1fr; }
@@ -305,38 +357,35 @@ const CSS = `
   }
 `;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SVG ICONS
-// ─────────────────────────────────────────────────────────────────────────────
 const Ico = {
   Target: () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0057FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
     </svg>
   ),
   Pen: () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0057FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
     </svg>
   ),
   Chart: () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0057FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
       <line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
     </svg>
   ),
   Monitor: () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0057FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
     </svg>
   ),
   Shield: () => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0057FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
     </svg>
   ),
   Eye: () => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF5A1F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EA580C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
     </svg>
   ),
@@ -351,23 +400,23 @@ const Ico = {
     </svg>
   ),
   Newspaper: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0057FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
       <path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6z"/>
     </svg>
   ),
   MapPin: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0057FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
     </svg>
   ),
   TrendingUp: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0057FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>
     </svg>
   ),
   Cpu: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0057FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/>
       <line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/>
       <line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/>
@@ -376,14 +425,14 @@ const Ico = {
     </svg>
   ),
   Users: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0057FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
       <circle cx="9" cy="7" r="4"/>
       <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
     </svg>
   ),
   Mic: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0057FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
       <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
       <line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
@@ -414,9 +463,6 @@ const Ico = {
   ),
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DATA
-// ─────────────────────────────────────────────────────────────────────────────
 const features = [
   { icon: <Ico.Target />, name: "Kontekstual & Relevan", desc: "Sesuai kondisi sosial dan perkembangan zaman terkini." },
   { icon: <Ico.Pen />, name: "Ringkas Namun Bermakna", desc: "Mudah dipahami oleh berbagai kalangan pembaca." },
@@ -456,11 +502,9 @@ const disclaimerItems = [
   { name: "Hak Cipta dan Aset", text: "Seluruh desain, sistem, dan elemen yang dikembangkan merupakan bagian dari karya pengembangan mandiri dan digunakan untuk tujuan non-komersial (portofolio)." },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PAGE
-// ─────────────────────────────────────────────────────────────────────────────
 export default function TentangKamiPage() {
-  // Scroll reveal
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   useEffect(() => {
     const els = document.querySelectorAll(".tk-reveal");
     const observer = new IntersectionObserver(
@@ -470,6 +514,13 @@ export default function TentangKamiPage() {
     els.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, []);
+
+  // Close mobile menu on outside click
+  useEffect(() => {
+    const handler = () => setIsMobileMenuOpen(false);
+    if (isMobileMenuOpen) document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [isMobileMenuOpen]);
 
   return (
     <>
@@ -482,17 +533,44 @@ export default function TentangKamiPage() {
             <Image src="/assets/NarasiKotaLogoBiru.webp" alt="NarasiKota" width={220} height={64}
               className="h-16 ml-6 w-auto object-contain" priority />
           </Link>
+
           <div className="tk-nav-links">
             <a href="/tentang-kami" className="active">Tentang Kami</a>
             <a href="/tim-kami">Tim Kami</a>
             <a href="#">Karier</a>
             <a href="#">Kontak</a>
           </div>
+
           <Link href="/register" className="tk-nav-cta">
             <Ico.UserPlus />
             Daftar Kontributor
           </Link>
+
+          {/* Hamburger */}
+          <button
+            className={`tk-hamburger${isMobileMenuOpen ? " open" : ""}`}
+            onClick={(e) => { e.stopPropagation(); setIsMobileMenuOpen((v) => !v); }}
+            aria-label="Toggle menu"
+          >
+            <span />
+            <span />
+            <span />
+          </button>
         </nav>
+
+        {/* Mobile Menu */}
+        <div
+          className={`tk-mobile-menu${isMobileMenuOpen ? " open" : ""}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <a href="/tentang-kami" className="active" onClick={() => setIsMobileMenuOpen(false)}>Tentang Kami</a>
+          <a href="/tim-kami" onClick={() => setIsMobileMenuOpen(false)}>Tim Kami</a>
+          <a href="#" onClick={() => setIsMobileMenuOpen(false)}>Karier</a>
+          <a href="#" onClick={() => setIsMobileMenuOpen(false)}>Kontak</a>
+          <Link href="/register" className="tk-mobile-menu-cta" onClick={() => setIsMobileMenuOpen(false)}>
+            Daftar Kontributor
+          </Link>
+        </div>
 
         {/* BREADCRUMB */}
         <div className="tk-breadcrumb">
@@ -673,7 +751,7 @@ export default function TentangKamiPage() {
 
         {/* FOOTER */}
         <footer className="tk-footer">
-          <span>© 2025 NarasiKota. Proyek portofolio mandiri.</span>
+          <span>© 2026 NarasiKota. Proyek portofolio mandiri.</span>
           <span>
             <a href="/register">Daftar Kontributor</a>{" · "}
             <a href="#">Kebijakan Privasi</a>{" · "}

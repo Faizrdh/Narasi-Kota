@@ -1,24 +1,19 @@
-// app/berita/[slug]/page.tsx
+// app/berita/[slug]/page.tsx — KODE UTUH dengan sistem Dukung Naik + Reward
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import prisma from "@/lib/prisma";
 import PageViewTracker from "./_components/PageViewTracker";
+import LikeButton from "./_components/LikeButton";
+import RewardBadge from "./_components/RewardBadge";
 
+// ── Warna kategori ─────────────────────────────────────────────
 const categoryColor: Record<string, string> = {
   Ekonomi:   "bg-blue-100 text-blue-700",
   Teknologi: "bg-purple-100 text-purple-700",
   Politik:   "bg-orange-100 text-orange-700",
   Keuangan:  "bg-green-100 text-green-700",
   Bisnis:    "bg-pink-100 text-pink-700",
-};
-
-const categoryColorText: Record<string, string> = {
-  Ekonomi:   "text-blue-600",
-  Teknologi: "text-purple-600",
-  Politik:   "text-orange-600",
-  Keuangan:  "text-green-600",
-  Bisnis:    "text-pink-600",
 };
 
 const categories = [
@@ -30,19 +25,19 @@ const categories = [
   { name: "Keuangan",  icon: "💰" },
 ];
 
+// ── Format tanggal ─────────────────────────────────────────────
 function formatDate(dateStr: string | Date) {
   return new Date(dateStr).toLocaleDateString("id-ID", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   });
 }
-
 function formatDateShort(dateStr: string | Date) {
   return new Date(dateStr).toLocaleDateString("id-ID", {
     day: "numeric", month: "short", year: "numeric",
   });
 }
 
-// ── VideoEmbed: YouTube / Vimeo / mp4 ────────────────────────
+// ── VideoEmbed: YouTube / Vimeo / mp4 ─────────────────────────
 function VideoEmbed({ url }: { url: string }) {
   const ytMatch = url.match(
     /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
@@ -60,7 +55,6 @@ function VideoEmbed({ url }: { url: string }) {
       </div>
     );
   }
-
   const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
   if (vimeoMatch) {
     return (
@@ -74,7 +68,6 @@ function VideoEmbed({ url }: { url: string }) {
       </div>
     );
   }
-
   return (
     <video controls className="w-full rounded-xl shadow-lg" preload="metadata">
       <source src={url} />
@@ -86,29 +79,24 @@ function VideoEmbed({ url }: { url: string }) {
   );
 }
 
-// ── Render body dengan media disisipkan di TENGAH ─────────────
+// ── ArticleBody ────────────────────────────────────────────────
 function ArticleBody({
-  body,
-  detailImage,
-  detailVideo,
-  title,
+  body, detailImage, detailVideo, title,
 }: {
   body: string;
   detailImage: string | null;
   detailVideo: string | null;
   title: string;
 }) {
-  const paragraphs = body.split("\n").filter(Boolean);
+  const paragraphs  = body.split("\n").filter(Boolean);
   const insertAfter = Math.min(3, Math.floor(paragraphs.length / 2));
-  const beforeMedia = paragraphs.slice(0, insertAfter);
-  const afterMedia  = paragraphs.slice(insertAfter);
+  const before      = paragraphs.slice(0, insertAfter);
+  const after       = paragraphs.slice(insertAfter);
 
   return (
     <div>
-      {beforeMedia.map((p, i) => (
-        <p key={`before-${i}`} className="text-gray-700 text-lg leading-relaxed mb-5">
-          {p}
-        </p>
+      {before.map((p, i) => (
+        <p key={`b-${i}`} className="text-gray-700 text-lg leading-relaxed mb-5">{p}</p>
       ))}
 
       {detailImage && (
@@ -138,16 +126,14 @@ function ArticleBody({
         </div>
       )}
 
-      {afterMedia.map((p, i) => (
-        <p key={`after-${i}`} className="text-gray-700 text-lg leading-relaxed mb-5">
-          {p}
-        </p>
+      {after.map((p, i) => (
+        <p key={`a-${i}`} className="text-gray-700 text-lg leading-relaxed mb-5">{p}</p>
       ))}
     </div>
   );
 }
 
-// ── Metadata ──────────────────────────────────────────────────
+// ── Metadata ───────────────────────────────────────────────────
 export async function generateMetadata({
   params,
 }: {
@@ -159,12 +145,14 @@ export async function generateMetadata({
   });
   if (!article) return { title: "Artikel Tidak Ditemukan" };
   return {
-    title: `${article.title} | Berita Indonesia`,
+    title: `${article.title} | NarasiKota`,
     description: article.excerpt || article.body.slice(0, 160),
   };
 }
 
-// ── Main Page ─────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// MAIN PAGE
+// ══════════════════════════════════════════════════════════════
 export default async function ArticleDetailPage({
   params,
 }: {
@@ -181,7 +169,7 @@ export default async function ArticleDetailPage({
 
   if (!article) notFound();
 
-  // Increment views (Total Views All Time)
+  // Increment views
   await prisma.article.update({
     where: { id: article.id },
     data: { views: { increment: 1 } },
@@ -190,15 +178,20 @@ export default async function ArticleDetailPage({
   // Artikel terkait
   const relatedArticles = await prisma.article.findMany({
     where: {
-      status: "publish",
+      status:   "publish",
       category: article.category,
-      NOT: { id: article.id },
+      NOT:      { id: article.id },
     },
     include: {
       author: { select: { id: true, name: true, email: true, image: true } },
     },
     orderBy: { createdAt: "desc" },
     take: 3,
+  });
+
+  // Hitung likes artikel ini (untuk ditampilkan sisi server)
+  const likeCount = await prisma.articleLike.count({
+    where: { articleId: article.id },
   });
 
   const publishDate  = article.publishedAt || article.createdAt;
@@ -208,16 +201,12 @@ export default async function ArticleDetailPage({
   return (
     <main className="min-h-screen bg-gray-50">
 
-      {/* ── TRACKING ── */}
+      {/* Tracking page view */}
       <PageViewTracker articleId={article.id} />
 
-      {/* ══════════════════════════════════════════════════════
-          HEADER — sama persis dengan page.tsx (main page)
-      ══════════════════════════════════════════════════════ */}
+      {/* ── HEADER ──────────────────────────────────────────── */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-6">
-
-          {/* Logo */}
           <Link href="/" className="shrink-0">
             <Image
               src="/assets/NarasiKotaLogoBiru.webp"
@@ -228,8 +217,6 @@ export default async function ArticleDetailPage({
               priority
             />
           </Link>
-
-          {/* Search */}
           <div className="flex-1 max-w-xl">
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-800 text-sm">🔍</span>
@@ -240,8 +227,6 @@ export default async function ArticleDetailPage({
               />
             </div>
           </div>
-
-          {/* Auth */}
           <div className="ml-auto flex items-center gap-3 shrink-0">
             <Link
               href="/login"
@@ -259,7 +244,7 @@ export default async function ArticleDetailPage({
         </div>
       </header>
 
-      {/* ── Category Nav — sama dengan page.tsx ─────────────── */}
+      {/* ── CATEGORY NAV ────────────────────────────────────── */}
       <nav className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex overflow-x-auto scrollbar-hide">
@@ -280,11 +265,11 @@ export default async function ArticleDetailPage({
         </div>
       </nav>
 
-      {/* ── Quick Links Bar — sama dengan page.tsx ──────────── */}
+      {/* ── QUICK LINKS ─────────────────────────────────────── */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex overflow-x-auto">
-            {["Breaking News", "Pasar Modal", "Emiten", "Analisis", "Opini", "Infografis", "Video"].map((item) => (
+            {["Breaking News","Pasar Modal","Emiten","Analisis","Opini","Infografis","Video"].map((item) => (
               <Link
                 key={item}
                 href="#"
@@ -297,8 +282,7 @@ export default async function ArticleDetailPage({
         </div>
       </div>
 
-      {/* ════════════════════════════════════════════════════ */}
-
+      {/* ── KONTEN UTAMA ────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 py-8">
 
         {/* Breadcrumb */}
@@ -314,9 +298,10 @@ export default async function ArticleDetailPage({
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-          {/* ── Konten Artikel ─────────────────────────────── */}
+          {/* ── ARTIKEL ───────────────────────────────────────── */}
           <article className="lg:col-span-2">
 
+            {/* Kategori + tanggal + views */}
             <div className="flex flex-wrap items-center gap-3 mb-4">
               <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${categoryColor[article.category] ?? "bg-gray-100 text-gray-700"}`}>
                 {article.category}
@@ -325,31 +310,57 @@ export default async function ArticleDetailPage({
               <span className="text-gray-400 text-sm">
                 👁️ {(article.views + 1).toLocaleString("id-ID")} views
               </span>
+              {/* Like count awal dari server */}
+              <span className="text-gray-400 text-sm">
+                ▲ {likeCount.toLocaleString("id-ID")} dukungan
+              </span>
             </div>
 
+            {/* Judul */}
             <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-900 leading-tight mb-5">
               {article.title}
             </h1>
 
+            {/* Excerpt */}
             {article.excerpt && (
               <p className="text-xl text-gray-500 leading-relaxed mb-6 border-l-4 border-red-600 pl-4 italic">
                 {article.excerpt}
               </p>
             )}
 
+            {/* ── Author card ─────────────────────────────────── */}
             <div className="flex items-center justify-between bg-white rounded-xl p-4 mb-6 shadow-sm border border-gray-100 flex-wrap gap-3">
+              {/* Info penulis */}
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0">
                   {article.author.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <p className="font-bold text-gray-900">{article.author.name}</p>
+                  {/* Nama + badge reward inline */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-bold text-gray-900">{article.author.name}</p>
+                    {/* ── REWARD BADGE INLINE ── */}
+                    <RewardBadge
+                      authorId={article.author.id}
+                      authorName={article.author.name}
+                      variant="inline"
+                    />
+                  </div>
                   <p className="text-xs text-gray-400">Penulis • {formatDateShort(publishDate)}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Tombol Dukung Naik compact + share */}
+              <div className="flex items-center gap-3">
+
+                {/* ── DUKUNG NAIK compact ── */}
+                <LikeButton articleId={article.id} compact={true} />
+
+                {/* Divider */}
+                <span className="w-px h-5 bg-gray-200 hidden sm:block" />
+
                 <span className="text-sm text-gray-400 hidden sm:block">Bagikan:</span>
+                {/* Facebook */}
                 <a
                   href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${baseUrl}/berita/${article.slug}`)}`}
                   target="_blank" rel="noopener noreferrer"
@@ -360,6 +371,7 @@ export default async function ArticleDetailPage({
                     <path d="M18.77 7.46H14.5v-1.9c0-.9.6-1.1 1-1.1h3V.5h-4.33C10.24.5 9.5 3.44 9.5 5.32v2.15h-3v4h3v12h5v-12h3.85l.42-4z"/>
                   </svg>
                 </a>
+                {/* X / Twitter */}
                 <a
                   href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(`${baseUrl}/berita/${article.slug}`)}`}
                   target="_blank" rel="noopener noreferrer"
@@ -370,6 +382,7 @@ export default async function ArticleDetailPage({
                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                   </svg>
                 </a>
+                {/* WhatsApp */}
                 <a
                   href={`https://wa.me/?text=${encodeURIComponent(article.title + " " + `${baseUrl}/berita/${article.slug}`)}`}
                   target="_blank" rel="noopener noreferrer"
@@ -383,6 +396,7 @@ export default async function ArticleDetailPage({
               </div>
             </div>
 
+            {/* ── Gambar utama artikel ─────────────────────────── */}
             <div className="relative w-full h-80 lg:h-[450px] rounded-xl overflow-hidden mb-8 shadow-lg">
               <Image
                 src={articleImage}
@@ -393,6 +407,7 @@ export default async function ArticleDetailPage({
               />
             </div>
 
+            {/* ── Isi artikel ──────────────────────────────────── */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-6">
               <ArticleBody
                 body={article.body}
@@ -402,6 +417,24 @@ export default async function ArticleDetailPage({
               />
             </div>
 
+            {/* ══════════════════════════════════════════════════
+                ── TOMBOL DUKUNG NAIK — di sini tempat terbaiknya
+            ══════════════════════════════════════════════════ */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <p className="text-sm font-semibold text-gray-700">
+                  Suka dengan artikel ini? Berikan dukunganmu!
+                </p>
+                <p className="text-xs text-gray-400 max-w-sm leading-relaxed">
+                  Setiap dukungan membantu penulis mendapatkan reward dan artikel ini
+                  menjangkau lebih banyak pembaca.
+                </p>
+                {/* ── LIKE BUTTON full (client component) ── */}
+                <LikeButton articleId={article.id} />
+              </div>
+            </div>
+
+            {/* Tag */}
             <div className="flex items-center gap-3 mb-8">
               <span className="text-sm font-semibold text-gray-600">Tag:</span>
               <Link
@@ -412,6 +445,7 @@ export default async function ArticleDetailPage({
               </Link>
             </div>
 
+            {/* Navigasi bawah */}
             <div className="flex items-center gap-4 flex-wrap">
               <Link
                 href="/"
@@ -428,9 +462,10 @@ export default async function ArticleDetailPage({
             </div>
           </article>
 
-          {/* ── Sidebar ─────────────────────────────────────── */}
+          {/* ── SIDEBAR ───────────────────────────────────────── */}
           <aside className="lg:col-span-1 space-y-6">
 
+            {/* Berita Terkait */}
             {relatedArticles.length > 0 && (
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -464,7 +499,29 @@ export default async function ArticleDetailPage({
               </div>
             )}
 
-            {/* ── Info Artikel (tanpa baris Media) ─────────── */}
+            {/* ══════════════════════════════════════════════════
+                ── REWARD BADGE PENULIS (card lengkap di sidebar)
+            ══════════════════════════════════════════════════ */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="w-1 h-6 bg-red-600 rounded" />
+                Reward Penulis
+              </h3>
+              <RewardBadge
+                authorId={article.author.id}
+                authorName={article.author.name}
+                variant="card"
+              />
+              {/* Penjelasan singkat sistem reward */}
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  Tier reward naik otomatis berdasarkan total dukungan yang diterima penulis dari semua artikelnya.
+                  Dukung artikel bagus agar penulisnya naik tier! 🚀
+                </p>
+              </div>
+            </div>
+
+            {/* Info Artikel */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <span className="w-1 h-6 bg-red-600 rounded" />
@@ -491,16 +548,21 @@ export default async function ArticleDetailPage({
                     👁️ {(article.views + 1).toLocaleString("id-ID")}
                   </span>
                 </div>
-                {/* Baris Media dihapus */}
+                {/* Like count — diambil dari server, client akan update otomatis via LikeButton */}
+                <div className="flex justify-between items-center py-3">
+                  <span className="text-gray-500">Dukungan</span>
+                  <span className="font-semibold text-gray-900">
+                    ▲ {likeCount.toLocaleString("id-ID")}
+                  </span>
+                </div>
               </div>
             </div>
-
-            {/* Newsletter card dihapus */}
 
           </aside>
         </div>
       </div>
 
+      {/* ── FOOTER ──────────────────────────────────────────── */}
       <footer className="bg-gray-900 text-white mt-12 py-8">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p className="text-gray-400 text-sm">© 2026 NarasiKota. All rights reserved.</p>

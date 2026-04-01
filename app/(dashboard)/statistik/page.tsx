@@ -14,7 +14,7 @@ const PERIOD_OPTIONS: { value: Period; label: string; short: string }[] = [
   { value: "7d",    label: "7 Hari",   short: "7H" },
   { value: "30d",   label: "30 Hari",  short: "30H" },
   { value: "90d",   label: "3 Bulan",  short: "3B" },
-  { value: "12m",   label: "12 Bulan", short: "12B" }, // ← BARU
+  { value: "12m",   label: "12 Bulan", short: "12B" },
   { value: "all",   label: "Semua",    short: "All" },
 ];
 
@@ -23,7 +23,7 @@ const PERIOD_LABELS: Record<Period, string> = {
   "7d":  "7 hari terakhir",
   "30d": "30 hari terakhir",
   "90d": "3 bulan terakhir",
-  "12m": "12 bulan terakhir", // ← BARU
+  "12m": "12 bulan terakhir",
   all:   "semua waktu",
 };
 
@@ -50,7 +50,6 @@ interface StatsSummary {
 interface TrendPoint { date: string; views: number; label: string; }
 interface AuthorStat { authorId: string; name: string; articles: number; views: number; }
 
-// ── BARU: CTR & Engagement ────────────────────────────────────
 interface CTRItem {
   id: string; title: string; category: string;
   impressions: number; clicks: number; ctr: number;
@@ -62,6 +61,22 @@ interface EngagementMetrics {
   totalTracked: number;
 }
 
+// ── BARU: Reward types ────────────────────────────────────────
+interface TierInfo {
+  id: string;
+  label: string;
+  icon: string;
+  minLikes: number;
+}
+interface RewardData {
+  authorId: string;
+  totalLikes: number;
+  currentTier: TierInfo;
+  nextTier: TierInfo | null;
+  progress: number;
+  loading?: boolean;
+}
+
 interface StatisticsData {
   period: Period;
   summary: StatsSummary;
@@ -71,8 +86,8 @@ interface StatisticsData {
   viewsPerArticle: ViewsPerArticle[];
   trendData: TrendPoint[];
   authorPerformance: AuthorStat[];
-  ctrData: CTRItem[];             // ← BARU
-  engagementMetrics: EngagementMetrics; // ← BARU
+  ctrData: CTRItem[];
+  engagementMetrics: EngagementMetrics;
 }
 
 // ── Warna ────────────────────────────────────────────────────
@@ -90,12 +105,10 @@ const CARD_THEMES = [
   { bg: "from-sky-500 to-blue-500",         light: "bg-sky-50",     text: "text-sky-600",     icon: "bg-sky-100" },
   { bg: "from-fuchsia-500 to-pink-600",     light: "bg-fuchsia-50", text: "text-fuchsia-600", icon: "bg-fuchsia-100" },
 ];
-const CATEGORY_BADGE_COLORS = [
-  "bg-indigo-100 text-indigo-600", "bg-cyan-100 text-cyan-600",
-  "bg-amber-100 text-amber-600",   "bg-emerald-100 text-emerald-600",
-  "bg-rose-100 text-rose-600",     "bg-violet-100 text-violet-600",
-  "bg-orange-100 text-orange-600",
-];
+
+// ── MONOCHROME category badge ─────────────────────────────────
+const CATEGORY_BADGE_CLASS = "bg-zinc-100 text-zinc-600";
+
 const RANK_COLORS = [
   "bg-rose-100 text-rose-500", "bg-rose-50 text-rose-400",
   "bg-rose-50 text-rose-400",  "bg-rose-50 text-rose-300",
@@ -109,13 +122,21 @@ const AUTHOR_RANK_COLORS = [
   { badge: "bg-indigo-100 text-indigo-600", bar: "#6366f1" },
 ];
 
-// ── Format delta absolut ──────────────────────────────────────
-function formatDelta(delta: number | null, unit = ""): string | null {
-  if (delta === null) return null;
-  if (delta === 0) return "±0" + unit;
-  return `${delta > 0 ? "+" : ""}${delta}${unit}`;
+// ── TIER CONFIG ───────────────────────────────────────────────
+const TIER_STYLES: Record<string, { bg: string; border: string; text: string; bar: string; badge: string }> = {
+  master:  { bg: "bg-zinc-50",  border: "", text: "text-zinc-500", bar: "#7c3aed", badge: "bg-violet-100 text-violet-700" },
+  bintang: { bg: "bg-zinc-50",   border: "",  text: "text-zinc-500",  bar: "#d97706", badge: "bg-amber-100 text-amber-700" },
+  pilihan: { bg: "bg-zinc-50",     border: "",    text: "text-zinc-500",    bar: "#0284c7", badge: "bg-sky-100 text-sky-700" },
+  aktif:   { bg: "bg-zinc-50", border: "",text: "text-zinc-500",bar: "#059669", badge: "bg-emerald-100 text-emerald-700" },
+  baru:    { bg: "bg-zinc-50",    border: "",   text: "text-zinc-500",   bar: "#a1a1aa", badge: "bg-zinc-100 text-zinc-500" },
+};
+
+// ── Delta ABSOLUT ─────────────────────────────────────────────
+function calcDelta(current: number, previous: number): number | null {
+  if (previous === 0 && current === 0) return null;
+  return current - previous;
 }
-void formatDelta; // suppress unused warning
+void calcDelta;
 
 // ── Delta Badge ───────────────────────────────────────────────
 function DeltaBadge({
@@ -200,7 +221,7 @@ const CustomYAxisTick = (props: { x?: number; y?: number; payload?: { value: str
 // ── Loading Skeleton ─────────────────────────────────────────
 function SkeletonCard() {
   return (
-    <div className="bg-white rounded-2xl p-5 border border-zinc-100 animate-pulse shadow-sm">
+    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-zinc-100 animate-pulse shadow-sm">
       <div className="h-2.5 w-20 bg-zinc-100 rounded-full mb-4" />
       <div className="h-8 w-14 bg-zinc-200 rounded-lg mb-3" />
       <div className="h-2 w-24 bg-zinc-100 rounded-full" />
@@ -211,7 +232,7 @@ function LoadingSkeleton() {
   return (
     <div className="space-y-6">
       <div className="h-7 w-36 bg-zinc-200 rounded-lg animate-pulse" />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
       </div>
     </div>
@@ -228,60 +249,60 @@ interface StatCardProps {
 function StatCard({ icon, label, value, sub, gradient, flat, flatTheme, delta, deltaUnit = "", deltaInverted }: StatCardProps) {
   if (flat && flatTheme) {
     return (
-      <div className="group rounded-2xl p-5 border border-zinc-100 bg-white hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-default">
+      <div className="group rounded-2xl p-4 sm:p-5 border border-zinc-100 bg-white hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-default">
         <div className="flex items-start justify-between mb-3">
-          <span className={`w-9 h-9 rounded-xl ${flatTheme.icon} flex items-center justify-center ${flatTheme.text}`}>{icon}</span>
+          <span className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl ${flatTheme.icon} flex items-center justify-center ${flatTheme.text}`}>{icon}</span>
           {delta !== undefined && delta !== null && (
             <DeltaBadge delta={delta} unit={deltaUnit} inverted={deltaInverted} />
           )}
         </div>
-        <p className="text-2xl font-bold text-zinc-900 mb-1 tabular-nums">
+        <p className="text-xl sm:text-2xl font-bold text-zinc-900 mb-1 tabular-nums">
           {typeof value === "number" ? value.toLocaleString("id-ID") : value}
         </p>
-        <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-1">{label}</p>
-        {sub && <div className="text-xs text-zinc-400">{sub}</div>}
+        <p className="text-[10px] sm:text-xs font-medium text-zinc-400 uppercase tracking-wider mb-1">{label}</p>
+        {sub && <div className="text-[10px] sm:text-xs text-zinc-400">{sub}</div>}
       </div>
     );
   }
   return (
-    <div className={`group rounded-2xl p-5 bg-gradient-to-br ${gradient} hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-default relative overflow-hidden`}>
+    <div className={`group rounded-2xl p-4 sm:p-5 bg-gradient-to-br ${gradient} hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-default relative overflow-hidden`}>
       <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-white/10 group-hover:scale-110 transition-transform duration-500" />
       <div className="absolute -bottom-6 -left-2 w-16 h-16 rounded-full bg-white/5 group-hover:scale-110 transition-transform duration-500" />
       <div className="relative">
         <div className="flex items-start justify-between mb-3">
-          <span className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-white">{icon}</span>
+          <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/20 flex items-center justify-center text-white">{icon}</span>
           {delta !== undefined && delta !== null && (
             <DeltaBadge delta={delta} unit={deltaUnit} inverted={deltaInverted} white />
           )}
         </div>
-        <p className="text-3xl font-bold text-white mb-1 tabular-nums">
+        <p className="text-2xl sm:text-3xl font-bold text-white mb-1 tabular-nums">
           {typeof value === "number" ? value.toLocaleString("id-ID") : value}
         </p>
-        <p className="text-xs font-semibold text-white/70 uppercase tracking-wider mb-1">{label}</p>
-        {sub && <div className="text-xs text-white/60">{sub}</div>}
+        <p className="text-[10px] sm:text-xs font-semibold text-white/70 uppercase tracking-wider mb-1">{label}</p>
+        {sub && <div className="text-[10px] sm:text-xs text-white/60">{sub}</div>}
       </div>
     </div>
   );
 }
 
 // ── Article Row ──────────────────────────────────────────────
-function ArticleRow({ rank, article, colorDot }: { rank: number; article: ArticleSummary; variant: "top" | "bottom"; colorDot: string }) {
+function ArticleRow({ rank, article }: { rank: number; article: ArticleSummary; variant: "top" | "bottom" }) {
   const date = article.publishedAt
     ? new Date(article.publishedAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
     : "—";
   return (
-    <div className="group flex items-center gap-3 py-3 px-3 -mx-3 rounded-xl hover:bg-zinc-50 transition-all duration-200 cursor-default">
-      <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 shadow-sm ${RANK_COLORS[rank - 1] ?? RANK_COLORS[4]}`}>{rank}</span>
+    <div className="group flex items-center gap-2 sm:gap-3 py-2.5 sm:py-3 px-2 sm:px-3 -mx-2 sm:-mx-3 rounded-xl hover:bg-zinc-50 transition-all duration-200 cursor-default">
+      <span className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold shrink-0 shadow-sm ${RANK_COLORS[rank - 1] ?? RANK_COLORS[4]}`}>{rank}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-zinc-800 truncate leading-tight group-hover:text-zinc-900 transition-colors">{article.title}</p>
-        <div className="flex items-center gap-2 mt-1">
-          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${colorDot} capitalize`}>{article.category}</span>
-          <span className="text-[10px] text-zinc-400">{date}</span>
+        <p className="text-xs sm:text-sm font-medium text-zinc-800 truncate leading-tight group-hover:text-zinc-900 transition-colors">{article.title}</p>
+        <div className="flex items-center gap-1.5 sm:gap-2 mt-1 flex-wrap">
+          <span className={`text-[9px] sm:text-[10px] font-medium px-1.5 py-0.5 rounded-full ${CATEGORY_BADGE_CLASS} capitalize`}>{article.category}</span>
+          <span className="text-[9px] sm:text-[10px] text-zinc-400">{date}</span>
         </div>
       </div>
       <div className="text-right shrink-0">
-        <p className="text-sm font-bold text-zinc-900 tabular-nums">{article.views.toLocaleString("id-ID")}</p>
-        <p className="text-[10px] text-zinc-400">views</p>
+        <p className="text-xs sm:text-sm font-bold text-zinc-900 tabular-nums">{article.views.toLocaleString("id-ID")}</p>
+        <p className="text-[9px] sm:text-[10px] text-zinc-400">views</p>
       </div>
     </div>
   );
@@ -290,14 +311,15 @@ function ArticleRow({ rank, article, colorDot }: { rank: number; article: Articl
 // ── Pie Legend ───────────────────────────────────────────────
 function PieLegend({ data, total }: { data: CategoryData[]; total: number }) {
   return (
-    <div className="space-y-2 mt-1">
+    <div className="space-y-1.5 sm:space-y-2 mt-1">
       {data.map((item, i) => (
-        <div key={item.name} className="group flex items-center gap-2.5 hover:bg-zinc-50 rounded-lg px-2 py-1 -mx-2 transition-colors cursor-default">
-          <span className="w-3 h-3 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
-          <span className="text-xs text-zinc-600 capitalize flex-1 truncate group-hover:text-zinc-900 transition-colors font-medium">{item.name}</span>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-bold text-zinc-800">{item.value}</span>
-            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${CATEGORY_BADGE_COLORS[i % CATEGORY_BADGE_COLORS.length]}`}>
+        <div key={item.name} className="group flex items-center gap-2 sm:gap-2.5 hover:bg-zinc-50 rounded-lg px-2 py-1 -mx-2 transition-colors cursor-default">
+          <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
+          <span className="text-[10px] sm:text-xs text-zinc-600 capitalize flex-1 truncate group-hover:text-zinc-900 transition-colors font-medium">{item.name}</span>
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <span className="text-[10px] sm:text-xs font-bold text-zinc-800">{item.value}</span>
+            {/* Monochrome badge for pie legend */}
+            <span className={`text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${CATEGORY_BADGE_CLASS}`}>
               {total > 0 ? Math.round((item.value / total) * 100) : 0}%
             </span>
           </div>
@@ -328,13 +350,13 @@ const GradientBar = (props: { x?: number; y?: number; width?: number; height?: n
 // ── Period Selector ───────────────────────────────────────────
 function PeriodSelector({ value, onChange, loading }: { value: Period; onChange: (p: Period) => void; loading: boolean }) {
   return (
-    <div className="flex items-center gap-1 bg-zinc-100 rounded-xl p-1">
+    <div className="flex items-center gap-0.5 sm:gap-1 bg-zinc-100 rounded-xl p-1 overflow-x-auto">
       {PERIOD_OPTIONS.map((opt) => (
         <button
           key={opt.value}
           onClick={() => onChange(opt.value)}
           disabled={loading}
-          className={`relative px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 disabled:opacity-50 ${
+          className={`relative px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all duration-200 disabled:opacity-50 whitespace-nowrap ${
             value === opt.value ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"
           }`}
         >
@@ -364,29 +386,28 @@ function AuthorRow({ rank, author, maxViews }: { rank: number; author: AuthorSta
   const initials  = author.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
   return (
-    <div className="group flex items-center gap-3 py-3 px-3 -mx-3 rounded-xl hover:bg-zinc-50 transition-all duration-200 cursor-default">
-      <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 shadow-sm ${RANK_COLORS[rank - 1] ?? "bg-zinc-100 text-zinc-400"}`}>{rank}</span>
-      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0" style={{ backgroundColor: rankTheme.bar }}>{initials}</div>
+    <div className="group flex items-center gap-2 sm:gap-3 py-2.5 sm:py-3 px-2 sm:px-3 -mx-2 sm:-mx-3 rounded-xl hover:bg-zinc-50 transition-all duration-200 cursor-default">
+      <span className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold shrink-0 shadow-sm ${RANK_COLORS[rank - 1] ?? "bg-zinc-100 text-zinc-400"}`}>{rank}</span>
+      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold text-white shrink-0" style={{ backgroundColor: rankTheme.bar }}>{initials}</div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-zinc-800 truncate leading-tight">{author.name}</p>
-        <div className="flex items-center gap-2 mt-1.5">
+        <p className="text-xs sm:text-sm font-semibold text-zinc-800 truncate leading-tight">{author.name}</p>
+        <div className="flex items-center gap-1.5 sm:gap-2 mt-1.5">
           <div className="flex-1 bg-zinc-100 rounded-full h-1.5">
             <div className="h-1.5 rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: rankTheme.bar, opacity: 0.8 }} />
           </div>
-          <span className="text-[10px] text-zinc-400 shrink-0">{pct}%</span>
+          <span className="text-[9px] sm:text-[10px] text-zinc-400 shrink-0">{pct}%</span>
         </div>
       </div>
       <div className="text-right shrink-0 space-y-0.5">
-        <p className="text-sm font-bold text-zinc-900 tabular-nums">{author.views.toLocaleString("id-ID")}</p>
-        <p className="text-[10px] text-zinc-400">{author.articles} artikel</p>
+        <p className="text-xs sm:text-sm font-bold text-zinc-900 tabular-nums">{author.views.toLocaleString("id-ID")}</p>
+        <p className="text-[9px] sm:text-[10px] text-zinc-400">{author.articles} artikel</p>
       </div>
     </div>
   );
 }
 
-// ── ── ── ── ── BARU: CTR Row ── ── ── ── ── ── ── ── ── ── ──
+// ── CTR Row ───────────────────────────────────────────────────
 function CTRRow({ rank, item }: { rank: number; item: CTRItem }) {
-  // Kategorisasi CTR
   const ctrColor =
     item.ctr >= 10 ? "text-emerald-600 bg-emerald-50" :
     item.ctr >= 5  ? "text-sky-600 bg-sky-50" :
@@ -399,40 +420,30 @@ function CTRRow({ rank, item }: { rank: number; item: CTRItem }) {
     item.ctr >= 2  ? "Cukup" :
     "Perlu dioptimasi";
 
-  const catColor = CATEGORY_BADGE_COLORS[rank % CATEGORY_BADGE_COLORS.length];
-
   return (
-    <div className="group flex items-center gap-3 py-3 px-3 -mx-3 rounded-xl hover:bg-zinc-50 transition-all duration-200 cursor-default">
-      {/* Rank */}
-      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${RANK_COLORS[rank - 1] ?? "bg-zinc-100 text-zinc-400"}`}>
+    <div className="group flex items-center gap-2 sm:gap-3 py-2.5 sm:py-3 px-2 sm:px-3 -mx-2 sm:-mx-3 rounded-xl hover:bg-zinc-50 transition-all duration-200 cursor-default">
+      <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[9px] sm:text-[10px] font-bold shrink-0 ${RANK_COLORS[rank - 1] ?? "bg-zinc-100 text-zinc-400"}`}>
         {rank}
       </span>
-
-      {/* Title & category */}
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-zinc-800 truncate leading-tight group-hover:text-zinc-900">{item.title}</p>
-        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${catColor} capitalize mt-1 inline-block`}>{item.category}</span>
+        <p className="text-[10px] sm:text-xs font-semibold text-zinc-800 truncate leading-tight group-hover:text-zinc-900">{item.title}</p>
+        {/* Monochrome category badge */}
+        <span className={`text-[9px] sm:text-[10px] font-medium px-1.5 py-0.5 rounded-full ${CATEGORY_BADGE_CLASS} capitalize mt-1 inline-block`}>{item.category}</span>
       </div>
-
-      {/* Impressions */}
-      <div className="text-center shrink-0 w-16">
-        <p className="text-xs font-bold text-zinc-700 tabular-nums">{item.impressions.toLocaleString("id-ID")}</p>
-        <p className="text-[9px] text-zinc-400">impresi</p>
+      <div className="text-center shrink-0 w-12 sm:w-16">
+        <p className="text-[10px] sm:text-xs font-bold text-zinc-700 tabular-nums">{item.impressions.toLocaleString("id-ID")}</p>
+        <p className="text-[8px] sm:text-[9px] text-zinc-400">impresi</p>
       </div>
-
-      {/* Clicks */}
-      <div className="text-center shrink-0 w-14">
-        <p className="text-xs font-bold text-indigo-600 tabular-nums">{item.clicks.toLocaleString("id-ID")}</p>
-        <p className="text-[9px] text-zinc-400">klik</p>
+      <div className="text-center shrink-0 w-10 sm:w-14">
+        <p className="text-[10px] sm:text-xs font-bold text-indigo-600 tabular-nums">{item.clicks.toLocaleString("id-ID")}</p>
+        <p className="text-[8px] sm:text-[9px] text-zinc-400">klik</p>
       </div>
-
-      {/* CTR */}
-      <div className="shrink-0 w-20 text-right">
-        <span className={`inline-flex flex-col items-end`}>
-          <span className={`text-sm font-bold tabular-nums ${item.ctr >= 5 ? "text-emerald-600" : item.ctr >= 2 ? "text-amber-600" : "text-rose-500"}`}>
+      <div className="shrink-0 w-16 sm:w-20 text-right">
+        <span className="inline-flex flex-col items-end">
+          <span className={`text-xs sm:text-sm font-bold tabular-nums ${item.ctr >= 5 ? "text-emerald-600" : item.ctr >= 2 ? "text-amber-600" : "text-rose-500"}`}>
             {item.ctr.toFixed(1)}%
           </span>
-          <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full mt-0.5 ${ctrColor}`}>
+          <span className={`text-[8px] sm:text-[9px] font-semibold px-1 sm:px-1.5 py-0.5 rounded-full mt-0.5 ${ctrColor}`}>
             {ctrLabel}
           </span>
         </span>
@@ -441,7 +452,7 @@ function CTRRow({ rank, item }: { rank: number; item: CTRItem }) {
   );
 }
 
-// ── ── ── BARU: Engagement Metric Card ── ── ── ── ── ── ── ── ──
+// ── Engagement Metric Card ────────────────────────────────────
 function EngagementCard({
   label, value, subtitle, color, icon, helpText,
 }: {
@@ -449,35 +460,117 @@ function EngagementCard({
   color: string; icon: React.ReactNode; helpText?: string;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-zinc-100 p-5 hover:shadow-md transition-shadow duration-300">
+    <div className="bg-white rounded-2xl border border-zinc-100 p-4 sm:p-5 hover:shadow-md transition-shadow duration-300">
       <div className="flex items-center justify-between mb-3">
-        <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${color}`}>{icon}</span>
+        <span className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center ${color}`}>{icon}</span>
       </div>
-      <p className="text-2xl font-bold text-zinc-900 tabular-nums mb-0.5">{value}</p>
-      <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">{label}</p>
-      <p className="text-xs text-zinc-500 mt-1">{subtitle}</p>
+      <p className="text-xl sm:text-2xl font-bold text-zinc-900 tabular-nums mb-0.5">{value}</p>
+      <p className="text-[10px] sm:text-xs font-semibold text-zinc-400 uppercase tracking-wider">{label}</p>
+      <p className="text-[10px] sm:text-xs text-zinc-500 mt-1">{subtitle}</p>
       {helpText && (
-        <p className="text-[10px] text-zinc-400 mt-2 border-t border-zinc-50 pt-2">{helpText}</p>
+        <p className="text-[9px] sm:text-[10px] text-zinc-400 mt-2 border-t border-zinc-50 pt-2">{helpText}</p>
       )}
     </div>
   );
 }
 
-// ── CTR Progress Bar untuk artikel tertentu ───────────────────
-function CTRMiniBar({ ctr, max }: { ctr: number; max: number }) {
-  const pct   = max > 0 ? (ctr / max) * 100 : 0;
-  const color =
-    ctr >= 10 ? "#10b981" :
-    ctr >= 5  ? "#0ea5e9" :
-    ctr >= 2  ? "#f59e0b" :
-    "#f43f5e";
+// ── ── ── BARU: Reward Row ── ── ── ── ── ── ── ── ── ── ── ──
+function RewardRow({ rank, author, reward }: { rank: number; author: AuthorStat; reward: RewardData | undefined }) {
+  const initials = author.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  const tierId   = reward?.currentTier?.id ?? "baru";
+  const style    = TIER_STYLES[tierId] ?? TIER_STYLES.baru;
+
+  if (!reward || reward.loading) {
+    return (
+      <div className="flex items-center gap-2 sm:gap-3 py-3 px-2 sm:px-3 -mx-2 sm:-mx-3 rounded-xl animate-pulse">
+        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-zinc-100 shrink-0" />
+        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-zinc-100 shrink-0" />
+        <div className="flex-1 space-y-1.5">
+          <div className="h-3 bg-zinc-100 rounded-full w-2/3" />
+          <div className="h-2 bg-zinc-50 rounded-full w-1/2" />
+        </div>
+        <div className="w-16 sm:w-20 space-y-1">
+          <div className="h-3 bg-zinc-100 rounded-full" />
+          <div className="h-2 bg-zinc-50 rounded-full" />
+        </div>
+      </div>
+    );
+  }
+
+  const progress  = reward.progress;
+  const nextTier  = reward.nextTier;
+
   return (
-    <div className="w-full bg-zinc-100 rounded-full h-1 mt-1">
-      <div className="h-1 rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
+    <div className={`group flex items-center gap-2 sm:gap-3 py-3 px-2 sm:px-3 -mx-2 sm:-mx-3 rounded-xl hover:bg-zinc-50/80 transition-all duration-200 cursor-default`}>
+      {/* Rank */}
+      <span className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold shrink-0 ${RANK_COLORS[rank - 1] ?? "bg-zinc-100 text-zinc-400"}`}>
+        {rank}
+      </span>
+
+      {/* Avatar */}
+      <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold text-white shrink-0 ${style.bg} ${style.text} border ${style.border}`}>
+        {initials}
+      </div>
+
+      {/* Name + tier progress */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <p className="text-xs sm:text-sm font-semibold text-zinc-800 truncate leading-tight">{author.name}</p>
+          <span className={`text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full ${style.badge} shrink-0`}>
+            {reward.currentTier.icon} {reward.currentTier.label}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 mt-1.5">
+          <div className="flex-1 bg-zinc-100 rounded-full h-1.5 overflow-hidden">
+            <div
+              className="h-1.5 rounded-full transition-all duration-700"
+              style={{ width: `${progress}%`, backgroundColor: style.bar }}
+            />
+          </div>
+          <span className="text-[9px] sm:text-[10px] text-zinc-400 shrink-0 tabular-nums">{progress}%</span>
+        </div>
+        {nextTier && (
+          <p className="text-[9px] sm:text-[10px] text-zinc-400 mt-0.5">
+            Menuju {nextTier.icon} {nextTier.label} · {reward.totalLikes}/{nextTier.minLikes} likes
+          </p>
+        )}
+      </div>
+
+      {/* Likes */}
+      <div className="text-right shrink-0">
+        <p className="text-xs sm:text-sm font-bold text-zinc-900 tabular-nums">{reward.totalLikes.toLocaleString("id-ID")}</p>
+        <p className="text-[9px] sm:text-[10px] text-zinc-400">likes</p>
+      </div>
     </div>
   );
 }
-void CTRMiniBar; // suppress unused
+
+// ── ── ── BARU: Tier Legend ── ── ── ── ── ── ── ── ── ── ── ──
+function TierLegend() {
+  const tiers = [
+    { id: "baru",    icon: "🌱", label: "Penulis Baru",        min: "0 likes" },
+    { id: "aktif",   icon: "🔥", label: "Penulis Aktif",       min: "1+ likes" },
+    { id: "pilihan", icon: "⭐", label: "Kontributor Pilihan", min: "50+ likes" },
+    { id: "bintang", icon: "🏆", label: "Jurnalis Bintang",   min: "200+ likes" },
+    { id: "master",  icon: "💎", label: "Master Narasi",      min: "500+ likes" },
+  ];
+  return (
+    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-4 pt-4 border-t border-zinc-50">
+      <span className="text-[10px] text-zinc-400 font-medium shrink-0">Tier:</span>
+      {tiers.map((t) => {
+        const s = TIER_STYLES[t.id];
+        return (
+          <div key={t.id} className="flex items-center gap-1">
+            <span className={`text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${s.badge}`}>
+              {t.icon} {t.label}
+            </span>
+            <span className="text-[9px] text-zinc-400 hidden sm:inline">· {t.min}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 // ── Main Page ────────────────────────────────────────────────
 export default function StatistikPage() {
@@ -487,6 +580,59 @@ export default function StatistikPage() {
   const [refreshing, setRefreshing]     = useState(false);
   const [period, setPeriod]             = useState<Period>("all");
   const [periodChanging, setPeriodChanging] = useState(false);
+
+  // ── BARU: rewards state ──────────────────────────────────────
+  const [rewardsMap, setRewardsMap] = useState<Map<string, RewardData>>(new Map());
+  const [rewardsLoading, setRewardsLoading] = useState(false);
+
+  // ── Fetch rewards per author ──────────────────────────────
+  const fetchRewards = useCallback(async (authors: AuthorStat[]) => {
+    if (authors.length === 0) return;
+    setRewardsLoading(true);
+
+    // Set loading placeholders
+    const placeholders = new Map<string, RewardData>();
+    authors.forEach((a) => {
+      placeholders.set(a.authorId, {
+        authorId: a.authorId,
+        totalLikes: 0,
+        currentTier: { id: "baru", label: "Penulis Baru", icon: "🌱", minLikes: 0 },
+        nextTier: null,
+        progress: 0,
+        loading: true,
+      });
+    });
+    setRewardsMap(new Map(placeholders));
+
+    // Fetch all rewards in parallel
+    const results = await Promise.allSettled(
+      authors.map(async (a) => {
+        const res  = await fetch(`/api/users/${a.authorId}/rewards`, { credentials: "include" });
+        const json = await res.json();
+        return { authorId: a.authorId, ...json };
+      })
+    );
+
+    const newMap = new Map<string, RewardData>();
+    results.forEach((r, i) => {
+      const authorId = authors[i].authorId;
+      if (r.status === "fulfilled") {
+        newMap.set(authorId, { ...r.value, loading: false });
+      } else {
+        newMap.set(authorId, {
+          authorId,
+          totalLikes: 0,
+          currentTier: { id: "baru", label: "Penulis Baru", icon: "🌱", minLikes: 0 },
+          nextTier: { id: "aktif", label: "Penulis Aktif", icon: "🔥", minLikes: 1 },
+          progress: 0,
+          loading: false,
+        });
+      }
+    });
+
+    setRewardsMap(newMap);
+    setRewardsLoading(false);
+  }, []);
 
   const fetchStats = useCallback(
     async (opts: { isRefresh?: boolean; newPeriod?: Period } = {}) => {
@@ -500,8 +646,16 @@ export default function StatistikPage() {
         const res = await fetch(`/api/statistics?period=${activePeriod}`, { credentials: "include" });
         if (!res.ok) throw new Error("Gagal mengambil data statistik");
         const json = await res.json();
-        if (json.success) { setData(json.data); setError(null); }
-        else setError(json.message || "Terjadi kesalahan");
+        if (json.success) {
+          setData(json.data);
+          setError(null);
+          // Fetch rewards after stats loaded
+          if (json.data?.authorPerformance?.length > 0) {
+            fetchRewards(json.data.authorPerformance);
+          }
+        } else {
+          setError(json.message || "Terjadi kesalahan");
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Terjadi kesalahan");
       } finally {
@@ -510,7 +664,7 @@ export default function StatistikPage() {
         setPeriodChanging(false);
       }
     },
-    [period]
+    [period, fetchRewards]
   );
 
   useEffect(() => { fetchStats(); }, []); // eslint-disable-line
@@ -558,14 +712,13 @@ export default function StatistikPage() {
 
   const maxTrendViews = Math.max(...trendData.map((d) => d.views), 1);
   const avgTrendViews = Math.round(trendData.reduce((s, d) => s + d.views, 0) / (trendData.length || 1));
-
   const trendXInterval = period === "today" ? 3 : period === "7d" ? 1 : period === "30d" ? 4 : period === "90d" ? 2 : 2;
 
   const trendSubtitle =
     isAllTime         ? "12 bulan terakhir · per bulan" :
     period === "today" ? "Hari ini · per jam" :
     period === "90d"   ? "3 bulan terakhir · per minggu" :
-    period === "12m"   ? "12 bulan terakhir · per bulan" : // ← BARU
+    period === "12m"   ? "12 bulan terakhir · per bulan" :
     `${PERIOD_LABELS[period]} · per hari`;
 
   // ── Row 1: Gradient Cards ─────────────────────────────────
@@ -627,17 +780,26 @@ export default function StatistikPage() {
 
   const pieTotal = isAllTime ? summary.publishedArticles : summary.publishedInPeriod;
   const hasEngagementData = (engagementMetrics?.totalTracked ?? 0) > 0;
-  const maxCTR = ctrData.length > 0 ? Math.max(...ctrData.map((d) => d.ctr)) : 1;
-  void maxCTR;
+
+  // Sort rewards by tier rank + likes for leaderboard
+  const sortedAuthorsForRewards = [...authorPerformance].sort((a, b) => {
+    const ra = rewardsMap.get(a.authorId);
+    const rb = rewardsMap.get(b.authorId);
+    const TIER_ORDER: Record<string, number> = { master: 0, bintang: 1, pilihan: 2, aktif: 3, baru: 4 };
+    const ta = TIER_ORDER[ra?.currentTier?.id ?? "baru"] ?? 4;
+    const tb = TIER_ORDER[rb?.currentTier?.id ?? "baru"] ?? 4;
+    if (ta !== tb) return ta - tb;
+    return (rb?.totalLikes ?? 0) - (ra?.totalLikes ?? 0);
+  });
 
   return (
-    <div className={`space-y-6 transition-opacity duration-200 ${isTransitioning ? "opacity-60" : "opacity-100"}`}>
+    <div className={`space-y-4 sm:space-y-6 transition-opacity duration-200 ${isTransitioning ? "opacity-60" : "opacity-100"}`}>
 
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Statistik</h1>
-          <p className="text-sm text-zinc-400 mt-0.5">
+          <h1 className="text-lg sm:text-xl font-bold text-zinc-900 tracking-tight">Statistik</h1>
+          <p className="text-xs sm:text-sm text-zinc-400 mt-0.5">
             Ringkasan performa portal berita NarasiKota
             {!isAllTime && <span className="ml-1 text-indigo-500 font-medium">· {PERIOD_LABELS[period]}</span>}
           </p>
@@ -647,23 +809,23 @@ export default function StatistikPage() {
           <button
             onClick={() => fetchStats({ isRefresh: true })}
             disabled={isTransitioning}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-zinc-200 text-xs font-semibold text-zinc-600 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all duration-200 shadow-sm disabled:opacity-50"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl bg-white border border-zinc-200 text-xs font-semibold text-zinc-600 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all duration-200 shadow-sm disabled:opacity-50"
           >
-            <svg className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${refreshing ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            {refreshing ? "Memuat..." : "Refresh"}
+            <span className="hidden xs:inline">{refreshing ? "Memuat..." : "Refresh"}</span>
           </button>
         </div>
       </div>
 
       {/* ── Delta info bar ──────────────────────────────────── */}
       {!isAllTime && (
-        <div className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 border border-indigo-100 rounded-xl">
+        <div className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-indigo-50 border border-indigo-100 rounded-xl">
           <svg className="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <p className="text-xs text-indigo-600 font-medium">
+          <p className="text-[10px] sm:text-xs text-indigo-600 font-medium">
             Data untuk <span className="font-bold">{PERIOD_LABELS[period]}</span>
             {" · "}Badge = <span className="font-bold">perubahan absolut</span> vs periode sebelumnya
           </p>
@@ -671,7 +833,7 @@ export default function StatistikPage() {
       )}
 
       {/* ── Row 1: Gradient Cards ───────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {row1Cards.map((card) => (
           <StatCard key={card.label} label={card.label} value={card.value} gradient={card.gradient}
             sub={card.sub} icon={card.icon} delta={card.delta} deltaUnit={card.deltaUnit} />
@@ -679,7 +841,7 @@ export default function StatistikPage() {
       </div>
 
       {/* ── Row 2: Flat Cards ───────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {row2Cards.map((card) => (
           <StatCard
             key={card.label} label={card.label} value={card.value} flat flatTheme={card.theme}
@@ -693,20 +855,18 @@ export default function StatistikPage() {
         ))}
       </div>
 
-      {/* ══════════════════════════════════════════════════════
-          ── D. ENGAGEMENT METRICS ─────────────────────────────
-      ══════════════════════════════════════════════════════ */}
-      <div className="bg-white rounded-2xl border border-zinc-100 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
-        <div className="flex items-center justify-between mb-5">
+      {/* ── ENGAGEMENT METRICS ─────────────────────────────── */}
+      <div className="bg-white rounded-2xl border border-zinc-100 p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+        <div className="flex items-center justify-between mb-4 sm:mb-5">
           <div>
-            <h2 className="text-sm font-bold text-zinc-900">📊 Engagement Metrics</h2>
-            <p className="text-xs text-zinc-700 mt-0.5">
+            <h2 className="text-xs sm:text-sm font-bold text-zinc-900">📊 Engagement Metrics</h2>
+            <p className="text-[10px] sm:text-xs text-zinc-400 mt-0.5">
               Seberapa dalam pembaca berinteraksi dengan artikel
               {!isAllTime && <span className="text-indigo-500 font-medium"> · {PERIOD_LABELS[period]}</span>}
             </p>
           </div>
           {hasEngagementData && (
-            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 text-xs font-semibold rounded-lg">
+            <span className="px-2 sm:px-2.5 py-1 bg-emerald-50 text-emerald-600 text-[10px] sm:text-xs font-semibold rounded-lg">
               {engagementMetrics.totalTracked.toLocaleString("id-ID")} sesi
             </span>
           )}
@@ -720,140 +880,105 @@ export default function StatistikPage() {
               </svg>
             </div>
             <div className="text-center">
-              <p className="text-xs font-semibold text-zinc-700">Data belum tersedia</p>
-              <p className="text-[10px] text-zinc-700 mt-1">
-                Engagement tracking aktif setelah pengunjung membaca artikel. Data akan muncul setelah sesi pertama selesai.
+              <p className="text-xs font-semibold text-zinc-500">Data belum tersedia</p>
+              <p className="text-[10px] text-zinc-400 mt-1 max-w-xs">
+                Engagement tracking aktif setelah pengunjung membaca artikel.
               </p>
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Bounce Rate */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <EngagementCard
               label="Bounce Rate"
               value={engagementMetrics.bounceRate !== null ? `${engagementMetrics.bounceRate}%` : "—"}
               subtitle={
                 engagementMetrics.bounceRate !== null
-                  ? engagementMetrics.bounceRate < 30
-                    ? "👍 Sangat baik — pembaca engage"
-                    : engagementMetrics.bounceRate < 50
-                    ? "📌 Normal untuk portal berita"
-                    : "⚠️ Tinggi — cek kualitas konten"
+                  ? engagementMetrics.bounceRate < 30 ? "👍 Sangat baik — pembaca engage"
+                  : engagementMetrics.bounceRate < 50 ? "📌 Normal untuk portal berita"
+                  : "⚠️ Tinggi — cek kualitas konten"
                   : "Belum ada data"
               }
               color="bg-rose-50 text-rose-500"
-              helpText="% pembaca yang keluar < 15 detik tanpa interaksi"
-              icon={
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              }
+              helpText="% pembaca yang keluar < 15 detik"
+              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>}
             />
-
-            {/* Avg Scroll Depth */}
-            <div className="bg-white rounded-2xl border border-zinc-100 p-5 hover:shadow-md transition-shadow duration-300">
+            <div className="bg-white rounded-2xl border border-zinc-100 p-4 sm:p-5 hover:shadow-md transition-shadow duration-300">
               <div className="flex items-center justify-between mb-3">
-                <span className="w-9 h-9 rounded-xl bg-sky-50 text-sky-500 flex items-center justify-center">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                  </svg>
+                <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-sky-50 text-sky-500 flex items-center justify-center">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
                 </span>
               </div>
-              <p className="text-2xl font-bold text-zinc-900 tabular-nums mb-0.5">
-                {engagementMetrics.avgScrollDepth}%
-              </p>
-              {/* Progress bar scroll depth */}
+              <p className="text-xl sm:text-2xl font-bold text-zinc-900 tabular-nums mb-0.5">{engagementMetrics.avgScrollDepth}%</p>
               <div className="w-full bg-zinc-100 rounded-full h-2 my-2">
-                <div
-                  className="h-2 rounded-full transition-all duration-700"
-                  style={{
-                    width: `${engagementMetrics.avgScrollDepth}%`,
-                    background: engagementMetrics.avgScrollDepth >= 70
-                      ? "linear-gradient(to right, #10b981, #34d399)"
-                      : engagementMetrics.avgScrollDepth >= 40
-                      ? "linear-gradient(to right, #0ea5e9, #38bdf8)"
-                      : "linear-gradient(to right, #f59e0b, #fcd34d)",
-                  }}
-                />
+                <div className="h-2 rounded-full transition-all duration-700" style={{
+                  width: `${engagementMetrics.avgScrollDepth}%`,
+                  background: engagementMetrics.avgScrollDepth >= 70 ? "linear-gradient(to right, #10b981, #34d399)" :
+                    engagementMetrics.avgScrollDepth >= 40 ? "linear-gradient(to right, #0ea5e9, #38bdf8)" :
+                    "linear-gradient(to right, #f59e0b, #fcd34d)",
+                }} />
               </div>
-              <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Avg. Scroll Depth</p>
-              <p className="text-xs text-zinc-700 mt-1">
-                {engagementMetrics.avgScrollDepth >= 70
-                  ? "🔥 Artikel dibaca hampir tuntas"
-                  : engagementMetrics.avgScrollDepth >= 40
-                  ? "📖 Pembaca membaca separuh artikel"
-                  : "📌 Pembaca hanya membaca bagian atas"}
+              <p className="text-[10px] sm:text-xs font-semibold text-zinc-400 uppercase tracking-wider">Avg. Scroll Depth</p>
+              <p className="text-[10px] sm:text-xs text-zinc-500 mt-1">
+                {engagementMetrics.avgScrollDepth >= 70 ? "🔥 Artikel dibaca hampir tuntas" :
+                  engagementMetrics.avgScrollDepth >= 40 ? "📖 Pembaca membaca separuh artikel" :
+                  "📌 Pembaca hanya membaca bagian atas"}
               </p>
-              <p className="text-[10px] text-zinc-400 mt-2 border-t border-zinc-50 pt-2">Rata-rata persentase halaman yang di-scroll</p>
             </div>
-
-            {/* Completion Rate */}
             <EngagementCard
               label="Completion Rate"
               value={engagementMetrics.completionRate !== null ? `${engagementMetrics.completionRate}%` : "—"}
               subtitle={
                 engagementMetrics.completionRate !== null
-                  ? engagementMetrics.completionRate >= 30
-                    ? "🏆 Konten sangat engaging!"
-                    : engagementMetrics.completionRate >= 15
-                    ? "✅ Di atas rata-rata industri"
-                    : "📝 Pertimbangkan pemendekan artikel"
+                  ? engagementMetrics.completionRate >= 30 ? "🏆 Konten sangat engaging!"
+                  : engagementMetrics.completionRate >= 15 ? "✅ Di atas rata-rata industri"
+                  : "📝 Pertimbangkan pemendekan artikel"
                   : "Belum ada data"
               }
               color="bg-emerald-50 text-emerald-600"
-              helpText="% pembaca yang scroll hingga ≥ 90% artikel"
-              icon={
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                </svg>
-              }
+              helpText="% pembaca yang scroll hingga ≥ 90%"
+              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>}
             />
           </div>
         )}
-
-        {/* Engagement footer note */}
         {hasEngagementData && (
           <div className="mt-4 pt-4 border-t border-zinc-50 flex items-start gap-2">
-            <svg className="w-3 h-3 text-zinc-300 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-[10px] text-zinc-700">
-              Engagement dihitung dari sesi pembaca yang sudah selesai (minimal 3 detik). Bounce Rate &lt;40% dan Completion Rate &gt;15% adalah target umum untuk portal berita.
+            <svg className="w-3 h-3 text-zinc-300 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <p className="text-[9px] sm:text-[10px] text-zinc-400">
+              Engagement dihitung dari sesi pembaca yang sudah selesai. Bounce Rate &lt;40% dan Completion Rate &gt;15% adalah target umum untuk portal berita.
             </p>
           </div>
         )}
       </div>
 
       {/* ── TREND LINE CHART ────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-zinc-100 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
-        <div className="flex items-center justify-between mb-5">
+      <div className="bg-white rounded-2xl border border-zinc-100 p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+        <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 mb-4 sm:mb-5">
           <div>
-            <h2 className="text-sm font-bold text-zinc-900">📈 Tren Views</h2>
-            <p className="text-xs text-zinc-400 mt-0.5">{trendSubtitle}</p>
+            <h2 className="text-xs sm:text-sm font-bold text-zinc-900">📈 Tren Views</h2>
+            <p className="text-[10px] sm:text-xs text-zinc-400 mt-0.5">{trendSubtitle}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-3 px-3 py-1.5 bg-zinc-50 rounded-xl">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 sm:gap-3 px-2.5 sm:px-3 py-1.5 bg-zinc-50 rounded-xl">
               <div className="text-center">
-                <p className="text-[10px] text-zinc-400 font-medium">Puncak</p>
-                <p className="text-xs font-bold text-indigo-600">{maxTrendViews.toLocaleString("id-ID")}</p>
+                <p className="text-[9px] sm:text-[10px] text-zinc-400 font-medium">Puncak</p>
+                <p className="text-[10px] sm:text-xs font-bold text-indigo-600">{maxTrendViews.toLocaleString("id-ID")}</p>
               </div>
-              <div className="w-px h-6 bg-zinc-200" />
+              <div className="w-px h-5 sm:h-6 bg-zinc-200" />
               <div className="text-center">
-                <p className="text-[10px] text-zinc-400 font-medium">Rata-rata</p>
-                <p className="text-xs font-bold text-zinc-700">{avgTrendViews.toLocaleString("id-ID")}</p>
+                <p className="text-[9px] sm:text-[10px] text-zinc-400 font-medium">Rata-rata</p>
+                <p className="text-[10px] sm:text-xs font-bold text-zinc-700">{avgTrendViews.toLocaleString("id-ID")}</p>
               </div>
             </div>
-            <span className="px-2.5 py-1 bg-indigo-50 text-indigo-600 text-xs font-semibold rounded-lg">{trendData.length} titik</span>
+            <span className="px-2 sm:px-2.5 py-1 bg-indigo-50 text-indigo-600 text-[10px] sm:text-xs font-semibold rounded-lg">{trendData.length} titik</span>
           </div>
         </div>
-
         {trendData.every((d) => d.views === 0) ? (
-          <div className="flex flex-col items-center justify-center h-48 text-zinc-300 gap-2">
-            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg>
+          <div className="flex flex-col items-center justify-center h-40 sm:h-48 text-zinc-300 gap-2">
+            <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg>
             <p className="text-xs text-zinc-400">{isAllTime ? "Belum ada data views" : `Tidak ada views di ${PERIOD_LABELS[period]}`}</p>
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={180}>
             <AreaChart data={trendData} margin={{ top: 10, right: 8, bottom: 0, left: -20 }}>
               <defs>
                 <linearGradient id="trend-gradient" x1="0" y1="0" x2="0" y2="1">
@@ -866,8 +991,7 @@ export default function StatistikPage() {
               <YAxis tick={{ fontSize: 9, fill: "#a1a1aa" }} axisLine={false} tickLine={false} allowDecimals={false} />
               {avgTrendViews > 0 && (
                 <ReferenceLine y={avgTrendViews} stroke="#a1a1aa" strokeDasharray="4 4" strokeWidth={1}
-                  label={{ value: `avg: ${avgTrendViews}`, position: "insideTopRight", fontSize: 9, fill: "#a1a1aa" }}
-                />
+                  label={{ value: `avg: ${avgTrendViews}`, position: "insideTopRight", fontSize: 9, fill: "#a1a1aa" }} />
               )}
               <Tooltip content={<CustomTrendTooltip />} cursor={{ stroke: "#6366f1", strokeWidth: 1, strokeDasharray: "4 4" }} />
               <Area type="monotone" dataKey="views" stroke="#6366f1" strokeWidth={2} fill="url(#trend-gradient)" dot={false}
@@ -877,81 +1001,64 @@ export default function StatistikPage() {
         )}
       </div>
 
-      {/* ══════════════════════════════════════════════════════
-          ── C. CTR & HEADLINE PERFORMANCE ────────────────────
-      ══════════════════════════════════════════════════════ */}
-      <div className="bg-white rounded-2xl border border-zinc-100 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
-        <div className="flex items-center justify-between mb-5">
+      {/* ── CTR & HEADLINE PERFORMANCE ───────────────────────── */}
+      <div className="bg-white rounded-2xl border border-zinc-100 p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+        <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 mb-4 sm:mb-5">
           <div>
-            <h2 className="text-sm font-bold text-zinc-900">🎯 CTR & Headline Performance</h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              Seberapa efektif judul artikel menarik klik dari feed
+            <h2 className="text-xs sm:text-sm font-bold text-zinc-900">🎯 CTR & Headline Performance</h2>
+            <p className="text-[10px] sm:text-xs text-zinc-400 mt-0.5">
+              Seberapa efektif judul artikel menarik klik
               {!isAllTime && <span className="text-indigo-500 font-medium"> · {PERIOD_LABELS[period]}</span>}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-zinc-50 rounded-lg">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-zinc-50 rounded-lg">
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
               <span className="text-[10px] text-zinc-500 font-medium">CTR ≥10% luar biasa</span>
             </div>
-            <span className="px-2.5 py-1 bg-violet-50 text-violet-600 text-xs font-semibold rounded-lg">
+            <span className="px-2 sm:px-2.5 py-1 bg-violet-50 text-violet-600 text-[10px] sm:text-xs font-semibold rounded-lg">
               {ctrData.length} artikel
             </span>
           </div>
         </div>
-
         {ctrData.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 gap-3">
             <div className="w-12 h-12 rounded-2xl bg-violet-50 flex items-center justify-center">
-              <svg className="w-6 h-6 text-violet-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-              </svg>
+              <svg className="w-6 h-6 text-violet-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" /></svg>
             </div>
             <div className="text-center">
               <p className="text-xs font-semibold text-zinc-500">Belum ada data CTR</p>
-              <p className="text-[10px] text-zinc-400 mt-1">
-                Data CTR muncul setelah artikel-artikel tampil di feed pembaca (impression tracking aktif).
-              </p>
+              <p className="text-[10px] text-zinc-400 mt-1">Data CTR muncul setelah artikel tampil di feed pembaca.</p>
             </div>
           </div>
         ) : (
           <>
-            {/* Legend header */}
-            <div className="flex items-center gap-3 pb-2 border-b border-zinc-50 mb-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+            <div className="hidden sm:flex items-center gap-3 pb-2 border-b border-zinc-50 mb-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
               <div className="w-6 shrink-0" />
               <div className="flex-1">Artikel</div>
               <div className="w-16 text-center shrink-0">Impresi</div>
               <div className="w-14 text-center shrink-0">Klik</div>
               <div className="w-20 text-right shrink-0">CTR</div>
             </div>
-
-            {ctrData.map((item, i) => (
-              <CTRRow key={item.id} rank={i + 1} item={item} />
-            ))}
-
-            {/* CTR scale legend */}
-            <div className="mt-5 pt-4 border-t border-zinc-50 flex flex-wrap items-center gap-3">
+            {ctrData.map((item, i) => <CTRRow key={item.id} rank={i + 1} item={item} />)}
+            <div className="mt-4 pt-4 border-t border-zinc-50 flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="text-[10px] text-zinc-400 font-medium">Skala CTR:</span>
               {[
-                { color: "bg-rose-400",   label: "< 2% — Rendah" },
-                { color: "bg-amber-400",  label: "2–5% — Cukup" },
-                { color: "bg-sky-400",    label: "5–10% — Bagus" },
+                { color: "bg-rose-400",    label: "< 2% — Rendah" },
+                { color: "bg-amber-400",   label: "2–5% — Cukup" },
+                { color: "bg-sky-400",     label: "5–10% — Bagus" },
                 { color: "bg-emerald-400", label: "≥ 10% — Luar biasa" },
               ].map((s) => (
-                <div key={s.label} className="flex items-center gap-1.5">
+                <div key={s.label} className="flex items-center gap-1">
                   <span className={`w-2 h-2 rounded-full ${s.color}`} />
-                  <span className="text-[10px] text-zinc-500">{s.label}</span>
+                  <span className="text-[9px] sm:text-[10px] text-zinc-500">{s.label}</span>
                 </div>
               ))}
             </div>
-
-            {/* CTR explanation */}
             <div className="mt-3 flex items-start gap-2">
-              <svg className="w-3 h-3 text-zinc-300 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-[10px] text-zinc-400">
-                <strong>CTR = Klik ÷ Impresi × 100%.</strong> Artikel dengan impresi tinggi tapi CTR rendah = judul kurang menarik. Impresi kecil tapi CTR tinggi = judul bagus, perlu lebih banyak exposure.
+              <svg className="w-3 h-3 text-zinc-300 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <p className="text-[9px] sm:text-[10px] text-zinc-400">
+                <strong>CTR = Klik ÷ Impresi × 100%.</strong> Impresi tinggi tapi CTR rendah = judul kurang menarik.
               </p>
             </div>
           </>
@@ -959,57 +1066,54 @@ export default function StatistikPage() {
       </div>
 
       {/* ── Charts Row ─────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-        {/* Pie Chart */}
-        <div className="bg-white rounded-2xl border border-zinc-100 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
-          <div className="flex items-center justify-between mb-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+        <div className="bg-white rounded-2xl border border-zinc-100 p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+          <div className="flex items-center justify-between mb-4 sm:mb-5">
             <div>
-              <h2 className="text-sm font-bold text-zinc-900">Artikel per Kategori</h2>
-              <p className="text-xs text-zinc-400 mt-0.5">{pieTotal} artikel {isAllTime ? "publish" : `di ${PERIOD_LABELS[period]}`}</p>
+              <h2 className="text-xs sm:text-sm font-bold text-zinc-900">Artikel per Kategori</h2>
+              <p className="text-[10px] sm:text-xs text-zinc-400 mt-0.5">{pieTotal} artikel {isAllTime ? "publish" : `di ${PERIOD_LABELS[period]}`}</p>
             </div>
-            <span className="px-2.5 py-1 bg-indigo-50 text-indigo-600 text-xs font-semibold rounded-lg">{articlesByCategory.length} kategori</span>
+            <span className="px-2 sm:px-2.5 py-1 bg-indigo-50 text-indigo-600 text-[10px] sm:text-xs font-semibold rounded-lg">{articlesByCategory.length} kategori</span>
           </div>
           {articlesByCategory.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 text-zinc-300 gap-2">
+            <div className="flex flex-col items-center justify-center h-40 sm:h-48 text-zinc-300 gap-2">
               <p className="text-xs text-zinc-400">{isAllTime ? "Belum ada data kategori" : `Tidak ada artikel di ${PERIOD_LABELS[period]}`}</p>
             </div>
           ) : (
-            <div className="flex gap-6 items-center">
+            <div className="flex flex-col xs:flex-row gap-4 sm:gap-6 items-center">
               <div className="shrink-0">
-                <PieChart width={160} height={160}>
-                  <Pie data={articlesByCategory} cx={75} cy={75} innerRadius={48} outerRadius={72} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                <PieChart width={140} height={140}>
+                  <Pie data={articlesByCategory} cx={65} cy={65} innerRadius={42} outerRadius={62} paddingAngle={3} dataKey="value" strokeWidth={0}>
                     {articlesByCategory.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                   </Pie>
                   <Tooltip content={<CustomPieTooltip />} />
                 </PieChart>
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 w-full">
                 <PieLegend data={articlesByCategory} total={pieTotal} />
               </div>
             </div>
           )}
         </div>
 
-        {/* Bar Chart */}
-        <div className="bg-white rounded-2xl border border-zinc-100 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
-          <div className="flex items-center justify-between mb-5">
+        <div className="bg-white rounded-2xl border border-zinc-100 p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+          <div className="flex items-center justify-between mb-4 sm:mb-5">
             <div>
-              <h2 className="text-sm font-bold text-zinc-900">Views per Artikel</h2>
-              <p className="text-xs text-zinc-400 mt-0.5">Top 10 · {isAllTime ? "all time" : PERIOD_LABELS[period]}</p>
+              <h2 className="text-xs sm:text-sm font-bold text-zinc-900">Views per Artikel</h2>
+              <p className="text-[10px] sm:text-xs text-zinc-400 mt-0.5">Top 10 · {isAllTime ? "all time" : PERIOD_LABELS[period]}</p>
             </div>
-            <span className="px-2.5 py-1 bg-cyan-50 text-cyan-600 text-xs font-semibold rounded-lg">Top 10</span>
+            <span className="px-2 sm:px-2.5 py-1 bg-cyan-50 text-cyan-600 text-[10px] sm:text-xs font-semibold rounded-lg">Top 10</span>
           </div>
           {viewsPerArticle.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 text-zinc-300 gap-2">
+            <div className="flex flex-col items-center justify-center h-40 sm:h-48 text-zinc-300 gap-2">
               <p className="text-xs text-zinc-400">{isAllTime ? "Belum ada data views" : `Tidak ada views di ${PERIOD_LABELS[period]}`}</p>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={210}>
-              <BarChart data={viewsPerArticle} layout="vertical" margin={{ top: 0, right: 12, bottom: 0, left: 0 }} barSize={14}>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={viewsPerArticle} layout="vertical" margin={{ top: 0, right: 12, bottom: 0, left: 0 }} barSize={12}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f4f4f5" />
-                <XAxis type="number" tick={{ fontSize: 10, fill: "#a1a1aa" }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="name" tick={<CustomYAxisTick />} axisLine={false} tickLine={false} width={120} />
+                <XAxis type="number" tick={{ fontSize: 9, fill: "#a1a1aa" }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="name" tick={<CustomYAxisTick />} axisLine={false} tickLine={false} width={110} />
                 <Tooltip content={<CustomBarTooltip />} cursor={{ fill: "#f8f8ff", radius: 8 }} />
                 <Bar dataKey="views" shape={<GradientBar />} radius={[0, 6, 6, 0]} />
               </BarChart>
@@ -1019,61 +1123,55 @@ export default function StatistikPage() {
       </div>
 
       {/* ── Article Tables ──────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white rounded-2xl border border-zinc-100 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
-          <div className="flex items-center justify-between mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+        <div className="bg-white rounded-2xl border border-zinc-100 p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div>
-              <h2 className="text-sm font-bold text-zinc-900">🔥 Top Artikel</h2>
-              <p className="text-xs text-zinc-400 mt-0.5">Paling banyak dibaca {isAllTime ? "" : `· ${PERIOD_LABELS[period]}`}</p>
+              <h2 className="text-xs sm:text-sm font-bold text-zinc-900">🔥 Top Artikel</h2>
+              <p className="text-[10px] sm:text-xs text-zinc-400 mt-0.5">Paling banyak dibaca {isAllTime ? "" : `· ${PERIOD_LABELS[period]}`}</p>
             </div>
-            <span className="px-2.5 py-1 bg-amber-50 text-amber-600 text-xs font-semibold rounded-lg">Top 5</span>
+            <span className="px-2 sm:px-2.5 py-1 bg-amber-50 text-amber-600 text-[10px] sm:text-xs font-semibold rounded-lg">Top 5</span>
           </div>
           {topArticles.length === 0 ? (
             <p className="text-xs text-zinc-400 py-8 text-center">{isAllTime ? "Belum ada artikel" : `Tidak ada views di ${PERIOD_LABELS[period]}`}</p>
           ) : (
-            topArticles.map((article, i) => (
-              <ArticleRow key={article.id} rank={i + 1} article={article} variant="top" colorDot={CATEGORY_BADGE_COLORS[i % CATEGORY_BADGE_COLORS.length]} />
-            ))
+            topArticles.map((article, i) => <ArticleRow key={article.id} rank={i + 1} article={article} variant="top" />)
           )}
         </div>
-
-        <div className="bg-white rounded-2xl border border-zinc-100 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-2xl border border-zinc-100 p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div>
-              <h2 className="text-sm font-bold text-zinc-900">📉 Performa Terendah</h2>
-              <p className="text-xs text-zinc-400 mt-0.5">Perlu perhatian lebih {isAllTime ? "" : `· ${PERIOD_LABELS[period]}`}</p>
+              <h2 className="text-xs sm:text-sm font-bold text-zinc-900">📉 Performa Terendah</h2>
+              <p className="text-[10px] sm:text-xs text-zinc-400 mt-0.5">Perlu perhatian lebih {isAllTime ? "" : `· ${PERIOD_LABELS[period]}`}</p>
             </div>
-            <span className="px-2.5 py-1 bg-rose-50 text-rose-500 text-xs font-semibold rounded-lg">Low Views</span>
+            <span className="px-2 sm:px-2.5 py-1 bg-rose-50 text-rose-500 text-[10px] sm:text-xs font-semibold rounded-lg">Low Views</span>
           </div>
           {bottomArticles.length === 0 ? (
             <p className="text-xs text-zinc-400 py-8 text-center">{isAllTime ? "Belum ada artikel" : `Tidak ada data di ${PERIOD_LABELS[period]}`}</p>
           ) : (
-            bottomArticles.map((article, i) => (
-              <ArticleRow key={article.id} rank={i + 1} article={article} variant="bottom" colorDot={CATEGORY_BADGE_COLORS[i % CATEGORY_BADGE_COLORS.length]} />
-            ))
+            bottomArticles.map((article, i) => <ArticleRow key={article.id} rank={i + 1} article={article} variant="bottom" />)
           )}
         </div>
       </div>
 
       {/* ── AUTHOR PERFORMANCE ──────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-zinc-100 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
-        <div className="flex items-center justify-between mb-5">
+      <div className="bg-white rounded-2xl border border-zinc-100 p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+        <div className="flex items-center justify-between mb-4 sm:mb-5">
           <div>
-            <h2 className="text-sm font-bold text-zinc-900">✍️ Performa Penulis</h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <h2 className="text-xs sm:text-sm font-bold text-zinc-900">✍️ Performa Penulis</h2>
+            <p className="text-[10px] sm:text-xs text-zinc-400 mt-0.5">
               Ranking jurnalis & kontributor berdasarkan views
               {!isAllTime && <span className="text-indigo-500 font-medium"> · {PERIOD_LABELS[period]}</span>}
             </p>
           </div>
-          <span className="px-2.5 py-1 bg-violet-50 text-violet-600 text-xs font-semibold rounded-lg">{authorPerformance.length} penulis</span>
+          <span className="px-2 sm:px-2.5 py-1 bg-violet-50 text-violet-600 text-[10px] sm:text-xs font-semibold rounded-lg">{authorPerformance.length} penulis</span>
         </div>
-
         {authorPerformance.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 text-zinc-300 gap-2">
             <p className="text-xs text-zinc-400">Belum ada data penulis</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 sm:gap-x-8">
             <div>
               {authorPerformance.slice(0, Math.ceil(authorPerformance.length / 2)).map((author, i) => (
                 <AuthorRow key={author.authorId} rank={i + 1} author={author} maxViews={authorPerformance[0]?.views || 1} />
@@ -1088,23 +1186,120 @@ export default function StatistikPage() {
             )}
           </div>
         )}
-
         {authorPerformance.length > 0 && (
           <div className="mt-4 pt-4 border-t border-zinc-50 flex items-center gap-2">
-            <svg className="w-3 h-3 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-[10px] text-zinc-400">
-              Progress bar menunjukkan proporsi views relatif terhadap penulis teratas{!isAllTime && ` · data ${PERIOD_LABELS[period]}`}
+            <svg className="w-3 h-3 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <p className="text-[9px] sm:text-[10px] text-zinc-400">
+              Progress bar = proporsi views relatif terhadap penulis teratas{!isAllTime && ` · data ${PERIOD_LABELS[period]}`}
             </p>
           </div>
         )}
       </div>
 
+      {/* ══════════════════════════════════════════════════════
+          ── BARU: REWARDS PENULIS ─────────────────────────────
+      ══════════════════════════════════════════════════════ */}
+      <div className="bg-white rounded-2xl border border-zinc-100 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
+        {/* Header dengan gradient subtle */}
+        <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4 bg-gradient-to-r from-zinc-50 to-white border-b border-zinc-50">
+          <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xs sm:text-sm font-bold text-zinc-900">🏅 Rewards Penulis</h2>
+                {rewardsLoading && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-zinc-100 rounded-full text-[9px] sm:text-[10px] text-zinc-400 font-medium animate-pulse">
+                    Memuat...
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] sm:text-xs text-zinc-400 mt-0.5">
+                Pencapaian penulis berdasarkan total likes artikel
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-2 sm:px-2.5 py-1 bg-amber-50 text-amber-600 text-[10px] sm:text-xs font-semibold rounded-lg">
+                {sortedAuthorsForRewards.length} penulis
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-4 sm:px-6 pb-4 sm:pb-6 pt-2">
+          {authorPerformance.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-zinc-50 flex items-center justify-center text-2xl">🌱</div>
+              <p className="text-xs text-zinc-400">Belum ada penulis terdaftar</p>
+            </div>
+          ) : (
+            <>
+              {/* Tier summary bar */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3 my-4">
+                {[
+                  { id: "master",  icon: "💎", label: "Master", min: "500+" },
+                  { id: "bintang", icon: "🏆", label: "Bintang", min: "200+" },
+                  { id: "pilihan", icon: "⭐", label: "Pilihan", min: "50+" },
+                  { id: "aktif",   icon: "🔥", label: "Aktif", min: "1+" },
+                  { id: "baru",    icon: "🌱", label: "Baru", min: "0" },
+                ].map((tier) => {
+                  const count = sortedAuthorsForRewards.filter(
+                    (a) => (rewardsMap.get(a.authorId)?.currentTier?.id ?? "baru") === tier.id
+                  ).length;
+                  const s = TIER_STYLES[tier.id];
+                  return (
+                    <div key={tier.id} className={`flex flex-col items-center justify-center py-2.5 sm:py-3 px-2 rounded-xl border ${s.border} ${s.bg} gap-1`}>
+                      <span className="text-lg sm:text-xl">{tier.icon}</span>
+                      <span className={`text-lg sm:text-xl font-bold tabular-nums ${s.text}`}>{count}</span>
+                      <span className={`text-[9px] sm:text-[10px] font-semibold ${s.text}`}>{tier.label}</span>
+                      <span className="text-[8px] sm:text-[9px] text-zinc-400">{tier.min} likes</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Author rewards list — 2-col on tablet+ */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 sm:gap-x-8">
+                <div>
+                  {sortedAuthorsForRewards.slice(0, Math.ceil(sortedAuthorsForRewards.length / 2)).map((author, i) => (
+                    <RewardRow
+                      key={author.authorId}
+                      rank={i + 1}
+                      author={author}
+                      reward={rewardsMap.get(author.authorId)}
+                    />
+                  ))}
+                </div>
+                {sortedAuthorsForRewards.length > 1 && (
+                  <div>
+                    {sortedAuthorsForRewards.slice(Math.ceil(sortedAuthorsForRewards.length / 2)).map((author, i) => (
+                      <RewardRow
+                        key={author.authorId}
+                        rank={Math.ceil(sortedAuthorsForRewards.length / 2) + i + 1}
+                        author={author}
+                        reward={rewardsMap.get(author.authorId)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <TierLegend />
+
+              {/* Info note */}
+              <div className="mt-3 flex items-start gap-2">
+                <svg className="w-3 h-3 text-zinc-300 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <p className="text-[9px] sm:text-[10px] text-zinc-400">
+                  Rewards dihitung dari total likes semua artikel publish. Progress bar menunjukkan kemajuan menuju tier berikutnya.
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
       {/* ── Footer ──────────────────────────────────────────── */}
       <div className="flex items-center justify-center gap-2 pb-2">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-        <p className="text-[11px] text-zinc-400">
+        <p className="text-[10px] sm:text-[11px] text-zinc-400 text-center">
           Data diperbarui secara real-time · Engagement & CTR aktif setelah PageView + Impression tracking terpasang
         </p>
       </div>
