@@ -517,7 +517,7 @@ export default function TimKamiPage(): React.JSX.Element {
           <div className="tm-nav-links">
             <a href="/tentang-kami">Tentang Kami</a>
             <a href="/tim-kami" className="active">Tim Kami</a>
-            <a href="#">Karier</a>
+            <a href="/karier">Karier</a>
             <a href="#">Kontak</a>
           </div>
           <Link href="/register" className="tm-nav-cta">

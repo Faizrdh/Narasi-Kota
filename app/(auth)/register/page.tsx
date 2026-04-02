@@ -1,170 +1,177 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
-type RoleKey = "redaksi" | "jurnalis" | "editor";
-
-interface RoleData {
-  sidebarTitle: string;
-  sidebarAge: string;
-  bcRole: string;
-  badge: string;
-  mainTitle: string;
-  mainDesc: string;
-  descPeran: string;
-  tanggungJawab: string[];
-  persyaratan: string[];
-  kualifikasi: string[];
-  badges: string[];
-  modalBadge: string;
-  labelPengalaman: string;
-  labelSpesialisasi: string;
-  placeholderSpesialisasi: string;
+/* ─────────────────────────────────────────────
+   HOOK: Intersection Observer for scroll reveal
+───────────────────────────────────────────────*/
+function useInView(threshold = 0.15) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setInView(true); obs.disconnect(); } },
+      { threshold }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [threshold]);
+  return { ref, inView };
 }
 
-interface FormState {
-  namaLengkap: string;
-  nomorHP: string;
-  email: string;
-  tanggalLahir: string;
-  jenisKelamin: string;
-  pengalaman: string;
-  spesialisasi: string;
-  motivasi: string;
-  portofolioLink: string;
-  cvFile: File | null;
-}
+/* ─────────────────────────────────────────────
+   DATA
+───────────────────────────────────────────────*/
+const carouselCards = [
+  {
+    label: "Total Reward",
+    value: "12.5K",
+    unit: "poin",
+    sub: "Dikumpulkan bulan ini",
+    badge: null,
+    extra: null,
+    accent: "#B91C1C",
+    accentLight: "#FEF2F2",
+    tag: "Reward",
+  },
+  {
+    label: "Status Kontributor",
+    value: null,
+    unit: null,
+    sub: "Akun terverifikasi resmi",
+    badge: "✓ Verified Contributor",
+    extra: "Artikel terpublikasi: 48",
+    accent: "#D97706",
+    accentLight: "#FFFBEB",
+    tag: "Status",
+  },
+  {
+    label: "Jangkauan Konten",
+    value: "84K",
+    unit: "pembaca",
+    sub: "Bulan ini · naik 23%",
+    badge: null,
+    extra: null,
+    accent: "#059669",
+    accentLight: "#ECFDF5",
+    tag: "Jangkauan",
+  },
+];
 
-const roles: Record<RoleKey, RoleData> = {
-  redaksi: {
-    sidebarTitle: "Redaksi / Redaktur",
-    sidebarAge: "21 Tahun",
-    bcRole: "Redaksi / Redaktur",
-    badge: "Redaksi & Redaktur",
-    mainTitle: "Bergabung sebagai<br/>Redaksi / Redaktur",
-    mainDesc:
-      "Jadilah pengelola utama alur produksi konten yang bertanggung jawab atas perencanaan, pengawasan, dan kualitas keseluruhan berita yang dipublikasikan oleh tim kami.",
-    descPeran:
-      "Redaksi atau Redaktur merupakan pengelola utama alur produksi konten yang bertanggung jawab terhadap perencanaan, pengawasan, serta kualitas keseluruhan berita yang dipublikasikan. Posisi ini membutuhkan kepemimpinan yang kuat, pemahaman mendalam tentang jurnalistik, serta kemampuan pengambilan keputusan yang cepat dan tepat.",
-    tanggungJawab: [
-      "Menentukan agenda dan topik editorial harian/mingguan",
-      "Mengarahkan penugasan kepada jurnalis",
-      "Melakukan review akhir terhadap konten sebelum tayang",
-      "Menjaga konsistensi gaya bahasa dan standar media",
-      "Mengawasi akurasi, keseimbangan, dan kelayakan berita",
-    ],
-    persyaratan: [
-      "Minimal usia 21 tahun",
-      "Memiliki pengalaman di bidang jurnalistik/media minimal 2 tahun",
-      "Memahami prinsip jurnalistik secara menyeluruh (5W+1H, cover both sides, nilai berita)",
-      "Memiliki kemampuan leadership dan manajemen tim",
-      "Mampu mengambil keputusan editorial secara objektif dan profesional",
-      "Menguasai tata bahasa Indonesia dengan sangat baik",
-      "Melampirkan portofolio karya atau pengalaman di media",
-    ],
-    kualifikasi: [
-      "Pernah menjabat sebagai redaktur di media",
-      "Memahami manajemen konten digital dan workflow redaksi",
-      "Memiliki wawasan luas terhadap isu nasional maupun lokal",
-    ],
-    badges: ["Manajemen Konten Digital", "Workflow Redaksi", "Isu Nasional", "5W+1H", "Leadership"],
-    modalBadge: "Redaksi / Redaktur",
-    labelPengalaman: "Pengalaman di Media/Jurnalistik",
-    labelSpesialisasi: "Topik Editorial yang Dikuasai",
-    placeholderSpesialisasi: "e.g. Politik, Ekonomi, Isu Lokal...",
+const benefits = [
+  {
+    icon: "🏆",
+    title: "Sistem Reward & Poin",
+    desc: "Setiap kontribusi Anda menghasilkan poin yang bisa ditukarkan dengan hadiah eksklusif, saldo digital, atau benefit menarik lainnya.",
+    color: "#B91C1C",
+    items: ["Poin per artikel dipublikasikan", "Bonus poin artikel terpopuler", "Reward bulanan top kontributor"],
   },
-  jurnalis: {
-    sidebarTitle: "Jurnalis / Reporter",
-    sidebarAge: "18 Tahun",
-    bcRole: "Jurnalis / Reporter",
-    badge: "Peliputan & Berita",
-    mainTitle: "Bergabung sebagai<br/>Jurnalis / Reporter",
-    mainDesc:
-      "Jadilah garda terdepan dalam mengumpulkan informasi, melakukan peliputan lapangan, dan menyusun berita yang faktual, aktual, dan dapat dipertanggungjawabkan.",
-    descPeran:
-      "Jurnalis bertugas melakukan peliputan, pengumpulan informasi, serta menyusun berita yang faktual, aktual, dan dapat dipertanggungjawabkan. Anda akan menjadi mata dan telinga lapangan yang menghubungkan peristiwa dengan pembaca melalui tulisan yang jernih dan berimbang.",
-    tanggungJawab: [
-      "Melakukan riset dan peliputan di lapangan atau secara daring",
-      "Mengumpulkan data melalui observasi dan wawancara",
-      "Menulis berita sesuai kaidah jurnalistik",
-      "Menyajikan informasi secara objektif, berimbang, dan akurat",
-      "Mengirimkan naskah sesuai deadline yang ditentukan",
-    ],
-    persyaratan: [
-      "Minimal usia 18 tahun",
-      "Memiliki kemampuan menulis berita dasar yang baik",
-      "Memahami prinsip dasar jurnalistik (5W+1H dan etika pers)",
-      "Mampu melakukan riset dan verifikasi informasi",
-      "Memiliki perangkat kerja (laptop/smartphone dan akses internet)",
-      "Bersedia melakukan peliputan jika dibutuhkan",
-      "Melampirkan minimal 1-2 contoh tulisan berita",
-    ],
-    kualifikasi: [
-      "Memiliki pengalaman liputan atau wawancara",
-      "Memiliki jaringan narasumber",
-      "Aktif mengikuti isu terkini",
-      "Memahami dasar fotografi atau videografi jurnalistik",
-    ],
-    badges: ["Liputan Lapangan", "Wawancara", "Verifikasi Fakta", "Fotografi Dasar", "Videografi"],
-    modalBadge: "Jurnalis / Reporter",
-    labelPengalaman: "Pengalaman Peliputan",
-    labelSpesialisasi: "Isu / Topik yang Diminati",
-    placeholderSpesialisasi: "e.g. Sosial, Hukum, Pendidikan...",
+  {
+    icon: "🎖️",
+    title: "Badge & Rekognisi",
+    desc: "Raih badge eksklusif yang tampil di profil publik Anda. Semakin aktif berkontribusi, semakin bergengsi badge yang Anda dapatkan.",
+    color: "#D97706",
+    items: ["Badge Verified Contributor", "Leaderboard mingguan & bulanan", "Hall of Fame kontributor terbaik"],
   },
-  editor: {
-    sidebarTitle: "Editor",
-    sidebarAge: "20 Tahun",
-    bcRole: "Editor",
-    badge: "Penyunting",
-    mainTitle: "Bergabung sebagai<br/>Editor",
-    mainDesc:
-      "Jadilah penjaga kualitas tulisan dengan memastikan setiap naskah memenuhi standar jurnalistik, bebas kesalahan, dan siap untuk dipublikasikan kepada pembaca.",
-    descPeran:
-      "Editor bertanggung jawab dalam proses penyuntingan naskah untuk memastikan kualitas tulisan, akurasi data, serta kesesuaian dengan standar jurnalistik sebelum dipublikasikan. Peran ini menuntut ketelitian tinggi, kemampuan analitis, dan pemahaman mendalam terhadap struktur penulisan.",
-    tanggungJawab: [
-      "Menyunting dan memperbaiki naskah dari jurnalis/redaksi",
-      "Memastikan struktur, bahasa, dan alur tulisan sesuai standar",
-      "Melakukan pengecekan fakta (fact-checking)",
-      "Memberikan masukan konstruktif kepada penulis",
-      "Menjamin konten bebas dari kesalahan dan layak tayang",
-    ],
-    persyaratan: [
-      "Minimal usia 20 tahun",
-      "Memiliki pengalaman menulis atau mengedit minimal 1 tahun",
-      "Menguasai tata bahasa Indonesia secara baik dan benar",
-      "Teliti, detail, dan memiliki kemampuan analisis tinggi",
-      "Memahami struktur penulisan berita dan feature",
-      "Melampirkan portofolio tulisan atau hasil editing",
-    ],
-    kualifikasi: [
-      "Berpengalaman sebagai editor media",
-      "Memahami SEO untuk artikel berita digital",
-      "Terbiasa menggunakan CMS atau platform publishing",
-    ],
-    badges: ["Fact-Checking", "SEO Artikel", "CMS Publishing", "Tata Bahasa Indonesia", "Penyuntingan"],
-    modalBadge: "Editor",
-    labelPengalaman: "Pengalaman Menulis / Editing",
-    labelSpesialisasi: "Bidang Keahlian Editing",
-    placeholderSpesialisasi: "e.g. Berita Hard News, Feature, Opini...",
+  {
+    icon: "📈",
+    title: "Portofolio Profesional",
+    desc: "Bangun portofolio nyata yang dapat ditunjukkan kepada rekruter, klien, atau mitra. Setiap karya Anda tersimpan dan dapat diakses kapan saja.",
+    color: "#059669",
+    items: ["Profil kontributor publik", "Sertifikat kontribusi resmi", "Portofolio karya terverifikasi"],
   },
-};
+  {
+    icon: "🤝",
+    title: "Networking & Komunitas",
+    desc: "Bergabung dengan komunitas jurnalis, editor, dan redaktur profesional. Perluas jaringan dan buka peluang kolaborasi yang nyata.",
+    color: "#0369A1",
+    items: ["Komunitas media profesional", "Webinar & event eksklusif", "Sesi behind-the-scenes tim inti"],
+  },
+  {
+    icon: "💼",
+    title: "Peluang Karier Nyata",
+    desc: "Kontributor terbaik berpotensi direkrut ke tim inti atau menjalin kerja sama resmi sebagai mitra dan ambassador NarasiKota.",
+    color: "#B91C1C",
+    items: ["Peluang rekrutmen tim inti", "Program ambassador resmi", "Revenue sharing konten populer"],
+  },
+];
 
+const stats = [
+  { value: "40+", label: "Kontributor Aktif" },
+  { value: "1K+", label: "Artikel Diterbitkan" },
+  { value: "1M+", label: "Pembaca Bulanan" },
+  { value: "98%", label: "Kepuasan Kontributor" },
+];
+
+const roles = [
+  {
+    icon: "📋",
+    title: "Redaksi / Redaktur",
+    desc: "Pengelola utama alur produksi konten. Bertanggung jawab atas perencanaan, pengawasan, dan kualitas keseluruhan berita.",
+    age: "21 Tahun",
+    tags: ["Leadership", "Editorial", "Manajemen Tim"],
+    href: "/karier",
+  },
+  {
+    icon: "🎙️",
+    title: "Jurnalis / Reporter",
+    desc: "Garda terdepan dalam mengumpulkan informasi, melakukan peliputan lapangan, dan menyusun berita yang faktual dan aktual.",
+    age: "18 Tahun",
+    tags: ["Liputan", "Wawancara", "Verifikasi Fakta"],
+    href: "/karier",
+  },
+  {
+    icon: "✏️",
+    title: "Editor",
+    desc: "Penjaga kualitas tulisan. Memastikan setiap naskah memenuhi standar jurnalistik dan siap dipublikasikan.",
+    age: "20 Tahun",
+    tags: ["Penyuntingan", "Fact-Checking", "SEO"],
+    href: "/karier",
+  },
+];
+
+const testimonials = [
+  {
+    name: "Rizky Firmansyah",
+    role: "Jurnalis Aktif · 2 Tahun",
+    avatar: "RF",
+    quote: "Bergabung di NarasiKota adalah keputusan terbaik dalam karier saya. Portofolio saya berkembang pesat dan jaringan profesional saya semakin luas.",
+  },
+  {
+    name: "Sari Dewi Putri",
+    role: "Editor · 1.5 Tahun",
+    avatar: "SD",
+    quote: "Sistem reward yang transparan dan komunitas yang supportif membuat saya semakin termotivasi untuk terus berkontribusi setiap harinya.",
+  },
+  {
+    name: "Ahmad Fauzi",
+    role: "Redaktur · 3 Tahun",
+    avatar: "AF",
+    quote: "Dari kontributor lepas, kini saya menjadi bagian dari tim inti. NarasiKota benar-benar menghargai dan mengembangkan potensi kontributornya.",
+  },
+];
+
+/* ─────────────────────────────────────────────
+   CSS
+───────────────────────────────────────────────*/
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
-  .rd-wrap *, .rd-wrap *::before, .rd-wrap *::after { box-sizing: border-box; }
+  .kr-wrap *, .kr-wrap *::before, .kr-wrap *::after { box-sizing: border-box; }
 
-  .rd-wrap {
+  .kr-wrap {
     font-family: 'DM Sans', sans-serif;
     background: #F8F9FB;
     color: #1E2535;
-    min-height: 100vh;
+    overflow-x: hidden;
   }
 
   /* ── NAVBAR ── */
-  .rd-nav {
+  .kr-nav {
     background: #ffffff;
     border-bottom: 1px solid #EEF0F4;
     position: sticky; top: 0; z-index: 100;
@@ -172,17 +179,14 @@ const CSS = `
     display: flex; align-items: center; justify-content: space-between;
     height: 68px;
   }
-  .rd-nav-logo {
-    display: flex; align-items: center; gap: 8px;
-    text-decoration: none;
-  }
-  .rd-nav-links { display: flex; gap: 32px; }
-  .rd-nav-links a {
+  .kr-nav-links { display: flex; gap: 32px; }
+  .kr-nav-links a {
     text-decoration: none; font-size: 14px; font-weight: 500;
     color: #5A6478; transition: color .2s;
   }
-  .rd-nav-links a:hover, .rd-nav-links a.active { color: #B91C1C; }
-  .rd-nav-cta {
+  .kr-nav-links a:hover { color: #B91C1C; }
+  .kr-nav-links a.active { color: #B91C1C; font-weight: 600; }
+  .kr-nav-cta {
     background: #B91C1C; color: white;
     border: none; padding: 10px 22px;
     border-radius: 50px; font-size: 14px; font-weight: 600;
@@ -190,783 +194,872 @@ const CSS = `
     transition: background .2s, transform .15s;
     text-decoration: none; font-family: 'DM Sans', sans-serif;
   }
-  .rd-nav-cta:hover { background: #991B1B; transform: translateY(-1px); }
-  .rd-nav-cta svg { width: 16px; height: 16px; }
+  .kr-nav-cta:hover { background: #991B1B; transform: translateY(-1px); }
 
   /* ── HAMBURGER ── */
-  .rd-hamburger {
-    display: none;
-    flex-direction: column; justify-content: center; align-items: center;
+  .kr-hamburger {
+    display: none; flex-direction: column; justify-content: center; align-items: center;
     gap: 5px; width: 40px; height: 40px;
     background: none; border: none; cursor: pointer; padding: 4px;
     border-radius: 8px; transition: background .2s;
   }
-  .rd-hamburger:hover { background: #FEF2F2; }
-  .rd-hamburger span {
+  .kr-hamburger:hover { background: #FEF2F2; }
+  .kr-hamburger span {
     display: block; width: 22px; height: 2px;
     background: #1E2535; border-radius: 2px;
-    transition: all .3s cubic-bezier(.4,0,.2,1);
-    transform-origin: center;
+    transition: all .3s cubic-bezier(.4,0,.2,1); transform-origin: center;
   }
-  .rd-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-  .rd-hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
-  .rd-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  .kr-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .kr-hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+  .kr-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-  /* ── MOBILE MENU ── */
-  .rd-mobile-menu {
-    display: none;
-    position: fixed; top: 68px; left: 0; right: 0; z-index: 99;
+  .kr-mobile-menu {
+    display: none; position: fixed; top: 68px; left: 0; right: 0; z-index: 99;
     background: #ffffff; border-bottom: 1px solid #EEF0F4;
     box-shadow: 0 8px 24px rgba(0,0,0,.1);
-    padding: 16px 24px 24px;
-    flex-direction: column; gap: 4px;
-    animation: rdMenuSlide .25s ease;
+    padding: 16px 24px 24px; flex-direction: column; gap: 4px;
+    animation: krMenuSlide .25s ease;
   }
-  .rd-mobile-menu.open { display: flex; }
-  @keyframes rdMenuSlide {
+  .kr-mobile-menu.open { display: flex; }
+  @keyframes krMenuSlide {
     from { opacity: 0; transform: translateY(-10px); }
     to   { opacity: 1; transform: translateY(0); }
   }
-  .rd-mobile-menu a {
+  .kr-mobile-menu a {
     text-decoration: none; font-size: 15px; font-weight: 500;
-    color: #5A6478; padding: 12px 8px;
-    border-bottom: 1px solid #F4F5F8;
-    transition: color .2s;
+    color: #5A6478; padding: 12px 8px; border-bottom: 1px solid #F4F5F8; transition: color .2s;
   }
-  .rd-mobile-menu a:last-of-type { border-bottom: none; }
-  .rd-mobile-menu a:hover { color: #B91C1C; }
-  .rd-mobile-menu-cta {
-    margin-top: 12px;
-    background: #B91C1C; color: white;
-    border: none; padding: 12px 22px;
-    border-radius: 50px; font-size: 14px; font-weight: 600;
-    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-    text-decoration: none; font-family: 'DM Sans', sans-serif;
-    transition: background .2s;
+  .kr-mobile-menu a:last-of-type { border-bottom: none; }
+  .kr-mobile-menu a:hover { color: #B91C1C; }
+  .kr-mobile-menu-cta {
+    margin-top: 12px; background: #B91C1C; color: white;
+    border: none; padding: 12px 22px; border-radius: 50px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    text-decoration: none; font-family: 'DM Sans', sans-serif; transition: background .2s;
   }
-  .rd-mobile-menu-cta:hover { background: #991B1B; }
+  .kr-mobile-menu-cta:hover { background: #991B1B; }
 
   /* ── BREADCRUMB ── */
-  .rd-breadcrumb {
-    padding: 14px 60px;
-    display: flex; align-items: center; gap: 8px;
+  .kr-breadcrumb {
+    padding: 14px 60px; display: flex; align-items: center; gap: 8px;
     font-size: 13px; color: #9AA3B2;
   }
-  .rd-breadcrumb a { color: #B91C1C; text-decoration: none; font-weight: 500; }
-  .rd-breadcrumb a:hover { text-decoration: underline; }
-  .rd-breadcrumb-sep { color: #DDE1E9; }
+  .kr-breadcrumb a { color: #B91C1C; text-decoration: none; font-weight: 500; }
+  .kr-breadcrumb a:hover { text-decoration: underline; }
+  .kr-breadcrumb-sep { color: #DDE1E9; }
 
-  /* ── MAIN LAYOUT ── */
-  .rd-main-wrap {
-    max-width: 1180px; margin: 0 auto;
-    padding: 0 40px 80px;
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 32px;
+  /* ── HERO ── */
+  .kr-hero {
+    position: relative; overflow: hidden;
+    background: #ffffff;
+    border-bottom: 1px solid #EEF0F4;
+    padding: 80px 60px 90px;
   }
-
-  /* ── SIDEBAR ── */
-  .rd-sidebar { position: sticky; top: 88px; height: fit-content; }
-  .rd-sidebar-card {
-    background: #ffffff; border-radius: 16px;
-    padding: 28px 24px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.08);
-    border: 1px solid #EEF0F4;
+  .kr-hero-bg {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 70% at 90% 50%, rgba(185,28,28,.05) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 50% at -10% 80%, rgba(185,28,28,.04) 0%, transparent 60%);
   }
-  .rd-role-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 26px; font-weight: 800;
-    color: #B91C1C; line-height: 1.2; margin-bottom: 24px;
+  .kr-hero-grid {
+    position: absolute; inset: 0; pointer-events: none; opacity: .03;
+    background-image: linear-gradient(#B91C1C 1px, transparent 1px), linear-gradient(90deg, #B91C1C 1px, transparent 1px);
+    background-size: 40px 40px;
   }
-  .rd-role-meta { display: flex; flex-direction: column; gap: 14px; margin-bottom: 28px; }
-  .rd-meta-item { display: flex; align-items: center; gap: 12px; }
-  .rd-meta-icon {
-    width: 38px; height: 38px; border-radius: 10px;
-    background: #FEF2F2;
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  .kr-hero-inner {
+    position: relative; max-width: 1100px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
   }
-  .rd-meta-icon svg {
-    width: 18px; height: 18px; stroke: #B91C1C; fill: none;
-    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
-  }
-  .rd-meta-label { font-size: 11px; color: #9AA3B2; font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
-  .rd-meta-value { font-size: 14px; font-weight: 600; color: #1E2535; }
-  .rd-apply-btn {
-    width: 100%; padding: 14px;
-    background: #B91C1C; color: white;
-    border: none; border-radius: 50px;
-    font-size: 15px; font-weight: 700; font-family: 'DM Sans', sans-serif;
-    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-    transition: background .2s, transform .15s, box-shadow .2s;
-    box-shadow: 0 4px 14px rgba(185,28,28,.3);
+  .kr-hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #FEF2F2; color: #B91C1C;
+    padding: 6px 14px; border-radius: 50px;
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px;
     margin-bottom: 20px;
   }
-  .rd-apply-btn:hover { background: #991B1B; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(185,28,28,.4); }
-  .rd-apply-btn svg { width: 18px; height: 18px; }
-  .rd-selection-notice {
-    background: #FEF2F2; border-left: 3px solid #B91C1C;
-    border-radius: 8px; padding: 12px 14px;
-    font-size: 12.5px; color: #5A6478; line-height: 1.6;
+  .kr-hero-eyebrow-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #B91C1C; animation: krPulse 1.8s ease-in-out infinite;
   }
-  .rd-selection-notice strong { color: #B91C1C; }
-  .rd-role-switcher { margin-top: 20px; }
-  .rd-role-switcher-label {
-    font-size: 11px; color: #9AA3B2; font-weight: 600;
-    text-transform: uppercase; letter-spacing: .6px; margin-bottom: 10px;
+  @keyframes krPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .5; transform: scale(1.4); }
   }
-  .rd-role-btn-group { display: flex; flex-direction: column; gap: 8px; }
-  .rd-role-tab {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 14px; border-radius: 10px;
-    border: 1.5px solid #DDE1E9; background: #ffffff;
-    cursor: pointer; font-size: 13px; font-weight: 500; color: #5A6478;
-    transition: all .2s; text-align: left; font-family: 'DM Sans', sans-serif;
-  }
-  .rd-role-tab:hover { border-color: #B91C1C; color: #B91C1C; background: #FEF2F2; }
-  .rd-role-tab.active { border-color: #B91C1C; background: #B91C1C; color: white; }
-  .rd-tab-icon { font-size: 16px; }
-
-  /* ── MAIN CONTENT ── */
-  .rd-content-area { padding-top: 4px; }
-  .rd-section-head { margin-bottom: 32px; }
-  .rd-badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: #FEF2F2; color: #B91C1C;
-    padding: 5px 12px; border-radius: 50px;
-    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
-    margin-bottom: 12px;
-  }
-  .rd-page-title {
+  .kr-hero-title {
     font-family: 'Playfair Display', serif;
-    font-size: 38px; font-weight: 800;
-    color: #1E2535; line-height: 1.15; margin-bottom: 14px;
+    font-size: 52px; font-weight: 900; line-height: 1.1;
+    color: #1E2535; margin-bottom: 20px;
   }
-  .rd-page-desc { font-size: 15px; color: #5A6478; line-height: 1.7; max-width: 660px; }
-  .rd-content-card {
-    background: #ffffff; border-radius: 16px;
-    padding: 32px; margin-bottom: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.08);
-    border: 1px solid #EEF0F4;
-    animation: rdFadeIn .35s ease;
+  .kr-hero-title em { font-style: italic; color: #B91C1C; }
+  .kr-hero-desc {
+    font-size: 16px; color: #5A6478; line-height: 1.8;
+    margin-bottom: 32px; max-width: 480px;
   }
-  @keyframes rdFadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  .rd-card-section-title {
-    font-size: 17px; font-weight: 700; color: #1E2535;
-    margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
-  }
-  .rd-card-section-title::before {
-    content: ''; display: block;
-    width: 4px; height: 18px;
-    background: #B91C1C; border-radius: 4px;
-  }
-  .rd-role-desc { font-size: 15px; color: #5A6478; line-height: 1.75; }
-  .rd-spec-list { list-style: none; display: flex; flex-direction: column; gap: 9px; padding: 0; margin: 0; }
-  .rd-spec-list li {
-    display: flex; align-items: flex-start; gap: 10px;
-    font-size: 14px; color: #5A6478; line-height: 1.6;
-  }
-  .rd-spec-list li::before {
-    content: ''; min-width: 7px; height: 7px;
-    background: #B91C1C; border-radius: 50%;
-    margin-top: 7px; flex-shrink: 0;
-  }
-  .rd-extra-badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
-  .rd-extra-badge {
-    background: #F8F9FB; border: 1px solid #DDE1E9;
-    color: #5A6478; padding: 5px 12px;
-    border-radius: 50px; font-size: 12.5px; font-weight: 500;
-  }
-  .rd-divider { height: 1px; background: #EEF0F4; margin: 20px 0; }
-  .rd-footer-link {
-    text-align: center; font-size: 14px; color: #9AA3B2; margin-top: 24px;
-  }
-  .rd-footer-link a { color: #B91C1C; font-weight: 600; text-decoration: none; }
-  .rd-footer-link a:hover { text-decoration: underline; }
-
-  /* ── MODAL ── */
-  .rd-modal-overlay {
-    position: fixed; inset: 0; z-index: 999;
-    background: rgba(10,15,30,.55); backdrop-filter: blur(4px);
-    display: none; align-items: center; justify-content: center; padding: 20px;
-  }
-  .rd-modal-overlay.open { display: flex; }
-  .rd-modal {
-    background: #ffffff; border-radius: 20px;
-    width: 100%; max-width: 580px; max-height: 90vh; overflow-y: auto;
-    box-shadow: 0 12px 40px rgba(0,0,0,.14);
-    animation: rdModalIn .3s cubic-bezier(.34,1.56,.64,1);
-  }
-  @keyframes rdModalIn {
-    from { opacity: 0; transform: scale(.92) translateY(20px); }
-    to   { opacity: 1; transform: scale(1) translateY(0); }
-  }
-  .rd-modal-header {
-    padding: 28px 32px 0;
-    display: flex; align-items: flex-start; justify-content: space-between;
-  }
-  .rd-modal-role-badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: #FEF2F2; color: #B91C1C;
-    padding: 5px 12px; border-radius: 50px;
-    font-size: 12px; font-weight: 700; margin-bottom: 8px;
-  }
-  .rd-modal-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 24px; font-weight: 800; color: #1E2535; line-height: 1.2;
-  }
-  .rd-modal-close {
-    background: #EEF0F4; border: none; width: 36px; height: 36px; border-radius: 50%;
-    cursor: pointer; font-size: 18px; color: #5A6478;
-    display: flex; align-items: center; justify-content: center;
-    transition: background .2s, color .2s; flex-shrink: 0; margin-left: 16px;
-    font-family: 'DM Sans', sans-serif;
-  }
-  .rd-modal-close:hover { background: #DDE1E9; color: #1E2535; }
-  .rd-modal-notice {
-    margin: 16px 32px;
-    background: #FFF8EC; border: 1px solid #FFD970;
-    border-radius: 10px; padding: 12px 16px;
-    font-size: 13px; color: #7A5800; line-height: 1.6;
-    display: flex; gap: 10px; align-items: flex-start;
-  }
-  .rd-modal-notice-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
-  .rd-modal-body { padding: 0 32px 0; }
-  .rd-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-  .rd-form-group { display: flex; flex-direction: column; gap: 6px; }
-  .rd-form-group.full { grid-column: 1 / -1; }
-  .rd-form-label { font-size: 13px; font-weight: 600; color: #1E2535; }
-  .rd-form-label span { color: #B91C1C; }
-  .rd-form-input, .rd-form-select, .rd-form-textarea {
-    width: 100%; padding: 11px 14px;
-    border: 1.5px solid #DDE1E9; border-radius: 10px;
-    font-family: 'DM Sans', sans-serif; font-size: 14px; color: #1E2535;
-    background: #ffffff; transition: border-color .2s, box-shadow .2s; outline: none;
-  }
-  .rd-form-input:focus, .rd-form-select:focus, .rd-form-textarea:focus {
-    border-color: #B91C1C; box-shadow: 0 0 0 3px rgba(185,28,28,.1);
-  }
-  .rd-form-textarea { resize: vertical; min-height: 90px; }
-  .rd-upload-area {
-    border: 2px dashed #DDE1E9; border-radius: 10px;
-    padding: 20px; text-align: center; cursor: pointer;
-    transition: border-color .2s, background .2s; position: relative;
-  }
-  .rd-upload-area:hover { border-color: #B91C1C; background: #FEF2F2; }
-  .rd-upload-area input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-  .rd-upload-icon { font-size: 28px; margin-bottom: 6px; }
-  .rd-upload-text { font-size: 13px; color: #5A6478; }
-  .rd-upload-text strong { color: #B91C1C; }
-  .rd-upload-hint { font-size: 12px; color: #9AA3B2; margin-top: 3px; }
-  .rd-modal-footer {
-    padding: 16px 32px 28px;
-    display: flex; flex-direction: column; gap: 12px;
-  }
-  .rd-submit-btn {
-    width: 100%; padding: 14px;
-    background: #B91C1C; color: white; border: none; border-radius: 50px;
+  .kr-hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+  .kr-btn-primary {
+    background: #B91C1C; color: white;
+    border: none; padding: 14px 28px; border-radius: 50px;
     font-size: 15px; font-weight: 700; font-family: 'DM Sans', sans-serif;
-    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-    transition: background .2s, transform .15s;
-    box-shadow: 0 4px 14px rgba(185,28,28,.3);
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    transition: background .2s, transform .2s, box-shadow .2s;
+    box-shadow: 0 4px 18px rgba(185,28,28,.35);
+    text-decoration: none;
   }
-  .rd-submit-btn:hover { background: #991B1B; transform: translateY(-1px); }
-  .rd-submit-btn:disabled { opacity: .7; cursor: not-allowed; transform: none; }
-  .rd-form-terms { font-size: 12.5px; color: #9AA3B2; text-align: center; line-height: 1.6; }
-  .rd-form-terms a { color: #B91C1C; text-decoration: none; }
-  .rd-form-terms a:hover { text-decoration: underline; }
+  .kr-btn-primary:hover { background: #991B1B; transform: translateY(-2px); box-shadow: 0 8px 28px rgba(185,28,28,.45); }
+  .kr-btn-secondary {
+    background: transparent; color: #1E2535;
+    border: 1.5px solid #DDE1E9; padding: 14px 28px; border-radius: 50px;
+    font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    transition: border-color .2s, color .2s, background .2s;
+    text-decoration: none;
+  }
+  .kr-btn-secondary:hover { border-color: #B91C1C; color: #B91C1C; background: #FEF2F2; }
 
-  /* Success */
-  .rd-success-modal { text-align: center; padding: 48px 32px; }
-  .rd-success-icon {
-    width: 72px; height: 72px; background: #E8FFF0; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 20px; font-size: 32px;
+  /* ── CAROUSEL ── */
+  .kr-hero-visual {
+    display: flex; align-items: center; justify-content: center; position: relative;
   }
-  .rd-success-title {
+  .kr-carousel-wrap {
+    width: 100%;
+    display: flex; flex-direction: column; align-items: center; gap: 20px;
+  }
+  .kr-carousel-track {
+    width: 100%; height: 320px; position: relative;
+  }
+  .kr-carousel-card {
+    position: absolute; inset: 0;
+    background: white; border-radius: 24px; padding: 36px 40px 32px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.10), 0 4px 16px rgba(0,0,0,.05);
+    border: 1px solid #EEF0F4;
+    display: flex; flex-direction: column; justify-content: space-between;
+    overflow: hidden;
+    transition: opacity .5s cubic-bezier(.22,1,.36,1), transform .5s cubic-bezier(.22,1,.36,1);
+    pointer-events: none;
+  }
+  .kr-carousel-card.active {
+    opacity: 1; transform: translateX(0) scale(1); z-index: 2; pointer-events: auto;
+  }
+  .kr-carousel-card.prev {
+    opacity: 0; transform: translateX(-50px) scale(.96); z-index: 1;
+  }
+  .kr-carousel-card.next {
+    opacity: 0; transform: translateX(50px) scale(.96); z-index: 1;
+  }
+
+  /* Top row: label left, tag pill right */
+  .kr-carousel-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .kr-carousel-label {
+    font-size: 12px; font-weight: 700; color: #9AA3B2;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .kr-carousel-tag {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px;
+    color: var(--c-accent); background: var(--c-accent-light);
+    padding: 5px 12px; border-radius: 50px;
+  }
+
+  /* Main value */
+  .kr-carousel-value-row {
+    display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px;
+  }
+  .kr-carousel-value {
     font-family: 'Playfair Display', serif;
-    font-size: 24px; font-weight: 800; color: #1E2535; margin-bottom: 10px;
+    font-size: 72px; font-weight: 900; color: #1E2535; line-height: 1;
   }
-  .rd-success-desc { font-size: 14px; color: #5A6478; line-height: 1.7; margin-bottom: 24px; }
-  .rd-success-close {
-    background: #B91C1C; color: white; border: none;
-    padding: 12px 28px; border-radius: 50px;
-    font-size: 14px; font-weight: 600; cursor: pointer;
-    font-family: 'DM Sans', sans-serif; transition: background .2s;
+  .kr-carousel-unit {
+    font-size: 20px; font-weight: 600; color: #9AA3B2;
   }
-  .rd-success-close:hover { background: #991B1B; }
+
+  /* Badge (status card) */
+  .kr-carousel-badge {
+    display: inline-flex; align-items: center;
+    padding: 10px 20px; border-radius: 10px;
+    font-size: 17px; font-weight: 700;
+    background: var(--c-accent-light); color: var(--c-accent);
+    margin-bottom: 10px; width: fit-content;
+  }
+  .kr-carousel-extra {
+    font-size: 14px; color: #5A6478; font-weight: 500; margin-top: 6px;
+  }
+
+  /* Divider + sub */
+  .kr-carousel-divider {
+    height: 1px; background: #EEF0F4; margin: 18px 0 14px;
+  }
+  .kr-carousel-sub {
+    font-size: 14px; font-weight: 500; color: #9AA3B2;
+  }
+
+  /* Bottom accent bar */
+  .kr-carousel-bar {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 5px;
+    background: var(--c-accent); border-radius: 0 0 24px 24px;
+  }
+
+  /* Dots — no progress bar */
+  .kr-carousel-dots {
+    display: flex; gap: 8px; align-items: center;
+  }
+  .kr-carousel-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #DDE1E9; border: none; cursor: pointer; padding: 0;
+    transition: background .3s, width .3s, border-radius .3s;
+  }
+  .kr-carousel-dot.active {
+    background: #B91C1C; width: 28px; border-radius: 4px;
+  }
+  .kr-carousel-dot:hover:not(.active) { background: #9AA3B2; }
+
+  /* ── STATS BAR ── */
+  .kr-stats-bar { background: #B91C1C; padding: 0 60px; }
+  .kr-stats-inner {
+    max-width: 1100px; margin: 0 auto;
+    display: grid; grid-template-columns: repeat(4, 1fr);
+  }
+  .kr-stat-item {
+    padding: 28px 20px; text-align: center;
+    border-right: 1px solid rgba(255,255,255,.15); transition: background .2s;
+  }
+  .kr-stat-item:last-child { border-right: none; }
+  .kr-stat-item:hover { background: rgba(255,255,255,.08); }
+  .kr-stat-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px; font-weight: 900; color: white; line-height: 1; margin-bottom: 4px;
+  }
+  .kr-stat-label { font-size: 13px; color: rgba(255,255,255,.75); font-weight: 500; }
+
+  /* ── SECTION COMMON ── */
+  .kr-section { padding: 90px 60px; }
+  .kr-section-inner { max-width: 1100px; margin: 0 auto; }
+  .kr-section-eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #FEF2F2; color: #B91C1C;
+    padding: 5px 14px; border-radius: 50px;
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+    margin-bottom: 14px;
+  }
+  .kr-section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 40px; font-weight: 800; color: #1E2535; line-height: 1.15; margin-bottom: 14px;
+  }
+  .kr-section-desc {
+    font-size: 15px; color: #5A6478; line-height: 1.75;
+    max-width: 600px; margin-bottom: 56px;
+  }
+  .kr-section-head-center { text-align: center; }
+  .kr-section-head-center .kr-section-desc { margin-left: auto; margin-right: auto; }
+
+  /* ── SCROLL REVEAL ── */
+  .kr-reveal {
+    opacity: 0; transform: translateY(32px);
+    transition: opacity .65s cubic-bezier(.22,1,.36,1), transform .65s cubic-bezier(.22,1,.36,1);
+  }
+  .kr-reveal.visible { opacity: 1; transform: translateY(0); }
+  .kr-reveal-delay-1 { transition-delay: .1s; }
+  .kr-reveal-delay-2 { transition-delay: .2s; }
+  .kr-reveal-delay-3 { transition-delay: .3s; }
+  .kr-reveal-delay-4 { transition-delay: .4s; }
+  .kr-reveal-delay-5 { transition-delay: .5s; }
+
+  /* ── BENEFITS ── */
+  .kr-benefits-section { background: #ffffff; }
+  .kr-benefits-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .kr-benefit-card {
+    background: #F8F9FB; border: 1px solid #EEF0F4;
+    border-radius: 18px; padding: 30px 28px;
+    position: relative; overflow: hidden;
+    transition: transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .3s, border-color .3s, background .3s;
+    cursor: default;
+  }
+  .kr-benefit-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--card-color);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform .35s cubic-bezier(.22,1,.36,1);
+  }
+  .kr-benefit-card:hover { transform: translateY(-6px); box-shadow: 0 16px 48px rgba(0,0,0,.1); border-color: #DDE1E9; background: white; }
+  .kr-benefit-card:hover::before { transform: scaleX(1); }
+  .kr-benefit-icon {
+    width: 52px; height: 52px; border-radius: 14px;
+    background: white; border: 1px solid #EEF0F4;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; margin-bottom: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06); transition: transform .3s;
+  }
+  .kr-benefit-card:hover .kr-benefit-icon { transform: scale(1.1) rotate(-3deg); }
+  .kr-benefit-title { font-size: 17px; font-weight: 700; color: #1E2535; margin-bottom: 10px; }
+  .kr-benefit-desc { font-size: 13.5px; color: #5A6478; line-height: 1.7; margin-bottom: 18px; }
+  .kr-benefit-items { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 7px; }
+  .kr-benefit-items li { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #5A6478; }
+  .kr-benefit-items li::before {
+    content: '✓'; color: var(--card-color); font-weight: 700;
+    font-size: 13px; flex-shrink: 0; margin-top: 1px;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .kr-how-section { background: #F8F9FB; }
+  .kr-steps {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; position: relative;
+  }
+  .kr-steps::before {
+    content: ''; position: absolute;
+    top: 40px; left: 12.5%; right: 12.5%; height: 2px;
+    background: linear-gradient(90deg, #B91C1C, #EF4444, #B91C1C);
+    background-size: 200% 100%; animation: krFlow 3s linear infinite; z-index: 0;
+  }
+  @keyframes krFlow {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 200% 0%; }
+  }
+  .kr-step { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 20px; position: relative; z-index: 1; }
+  .kr-step-num {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: white; border: 3px solid #B91C1C;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-size: 28px; font-weight: 900; color: #B91C1C;
+    margin-bottom: 20px; box-shadow: 0 4px 18px rgba(185,28,28,.2);
+    transition: transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .3s;
+  }
+  .kr-step:hover .kr-step-num { transform: scale(1.1); box-shadow: 0 8px 28px rgba(185,28,28,.35); }
+  .kr-step-title { font-size: 16px; font-weight: 700; color: #1E2535; margin-bottom: 8px; }
+  .kr-step-desc { font-size: 13.5px; color: #5A6478; line-height: 1.65; }
+
+  /* ── ROLES ── */
+  .kr-roles-section { background: #ffffff; }
+  .kr-roles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .kr-role-card {
+    background: #F8F9FB; border: 1px solid #EEF0F4;
+    border-radius: 18px; padding: 32px 28px;
+    display: flex; flex-direction: column;
+    transition: transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .3s, background .3s;
+    position: relative; overflow: hidden;
+  }
+  .kr-role-card::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
+    background: #B91C1C;
+    transform: scaleX(0); transform-origin: left;
+    transition: transform .35s cubic-bezier(.22,1,.36,1);
+  }
+  .kr-role-card:hover { transform: translateY(-6px); box-shadow: 0 16px 48px rgba(0,0,0,.1); background: white; }
+  .kr-role-card:hover::after { transform: scaleX(1); }
+  .kr-role-icon { font-size: 36px; margin-bottom: 16px; transition: transform .3s; }
+  .kr-role-card:hover .kr-role-icon { transform: scale(1.15) rotate(-5deg); }
+  .kr-role-card-title { font-size: 19px; font-weight: 700; color: #1E2535; margin-bottom: 10px; }
+  .kr-role-card-desc { font-size: 14px; color: #5A6478; line-height: 1.7; margin-bottom: 16px; flex: 1; }
+  .kr-role-meta-row { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
+  .kr-role-age-badge { background: #FEF2F2; color: #B91C1C; padding: 4px 10px; border-radius: 50px; font-size: 12px; font-weight: 700; }
+  .kr-role-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 22px; }
+  .kr-role-tag {
+    background: #EEF0F4; color: #5A6478; padding: 4px 10px;
+    border-radius: 50px; font-size: 12px; font-weight: 500;
+    transition: background .2s, color .2s;
+  }
+  .kr-role-card:hover .kr-role-tag { background: #FEF2F2; color: #B91C1C; }
+  .kr-role-link {
+    display: flex; align-items: center; gap: 6px;
+    color: #B91C1C; font-size: 14px; font-weight: 700;
+    text-decoration: none; transition: gap .2s;
+  }
+  .kr-role-link:hover { gap: 10px; }
+  .kr-role-link svg { width: 16px; height: 16px; }
+
+  /* ── TESTIMONIALS ── */
+  .kr-testi-section { background: #1E2535; overflow: hidden; position: relative; }
+  .kr-testi-section::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 60% 80% at 80% 50%, rgba(185,28,28,.12) 0%, transparent 60%);
+  }
+  .kr-testi-section .kr-section-eyebrow { background: rgba(185,28,28,.2); }
+  .kr-testi-section .kr-section-title { color: white; }
+  .kr-testi-section .kr-section-desc { color: rgba(255,255,255,.65); }
+  .kr-testi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .kr-testi-card {
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+    border-radius: 18px; padding: 28px 26px;
+    transition: background .3s, transform .3s, border-color .3s;
+  }
+  .kr-testi-card:hover { background: rgba(255,255,255,.09); transform: translateY(-4px); border-color: rgba(185,28,28,.4); }
+  .kr-testi-quote {
+    font-size: 14.5px; color: rgba(255,255,255,.8); line-height: 1.8;
+    margin-bottom: 22px; font-style: italic;
+    position: relative; padding-left: 18px;
+  }
+  .kr-testi-quote::before {
+    content: '"'; position: absolute; left: 0; top: -6px;
+    font-size: 48px; color: #B91C1C; font-family: 'Playfair Display', serif;
+    line-height: 1; font-style: normal;
+  }
+  .kr-testi-author { display: flex; align-items: center; gap: 12px; }
+  .kr-testi-avatar {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: #B91C1C; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: white; flex-shrink: 0;
+  }
+  .kr-testi-name { font-size: 14px; font-weight: 700; color: white; }
+  .kr-testi-role-label { font-size: 12px; color: rgba(255,255,255,.5); margin-top: 2px; }
+
+  /* ── CTA ── */
+  .kr-cta-section {
+    background: #ffffff; padding: 100px 60px;
+    text-align: center; position: relative; overflow: hidden;
+  }
+  .kr-cta-section::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse 50% 60% at 50% 100%, rgba(185,28,28,.06) 0%, transparent 60%);
+  }
+  .kr-cta-inner { position: relative; max-width: 700px; margin: 0 auto; }
+  .kr-cta-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 48px; font-weight: 900; color: #1E2535; line-height: 1.15; margin-bottom: 18px;
+  }
+  .kr-cta-title em { font-style: italic; color: #B91C1C; }
+  .kr-cta-desc { font-size: 16px; color: #5A6478; line-height: 1.75; margin-bottom: 36px; }
+  .kr-cta-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .kr-cta-note { font-size: 13px; color: #9AA3B2; margin-top: 18px; }
+
+  /* ── FOOTER ── */
+  .kr-page-footer {
+    background: #F8F9FB; border-top: 1px solid #EEF0F4;
+    padding: 30px 60px; text-align: center;
+    font-size: 13px; color: #9AA3B2;
+  }
+  .kr-page-footer a { color: #B91C1C; text-decoration: none; font-weight: 600; }
+  .kr-page-footer a:hover { text-decoration: underline; }
 
   /* ── RESPONSIVE ── */
+  @media (max-width: 1024px) {
+    .kr-benefits-grid { grid-template-columns: repeat(2, 1fr); }
+    .kr-roles-grid { grid-template-columns: repeat(2, 1fr); }
+    .kr-testi-grid { grid-template-columns: repeat(2, 1fr); }
+    .kr-hero-title { font-size: 42px; }
+  }
   @media (max-width: 900px) {
-    .rd-main-wrap { grid-template-columns: 1fr; padding: 0 20px 60px; }
-    .rd-sidebar { position: static; }
-    .rd-nav { padding: 0 20px; }
-    .rd-breadcrumb { padding: 14px 20px; }
-    .rd-page-title { font-size: 28px; }
-    .rd-form-grid { grid-template-columns: 1fr; }
-    .rd-nav-links { display: none; }
-    .rd-nav-cta { display: none; }
-    .rd-hamburger { display: flex; }
+    .kr-nav { padding: 0 20px; }
+    .kr-nav-links { display: none; }
+    .kr-nav-cta { display: none; }
+    .kr-hamburger { display: flex; }
+    .kr-hero { padding: 60px 24px 70px; }
+    .kr-hero-inner { grid-template-columns: 1fr; gap: 40px; }
+    .kr-hero-title { font-size: 36px; }
+    .kr-hero-visual { display: none; }
+    .kr-stats-inner { grid-template-columns: repeat(2, 1fr); }
+    .kr-stat-item { border-right: none; border-bottom: 1px solid rgba(255,255,255,.15); }
+    .kr-stat-item:nth-child(odd) { border-right: 1px solid rgba(255,255,255,.15); }
+    .kr-stat-item:nth-child(3), .kr-stat-item:nth-child(4) { border-bottom: none; }
+    .kr-section { padding: 60px 24px; }
+    .kr-breadcrumb { padding: 14px 24px; }
+    .kr-steps { grid-template-columns: repeat(2, 1fr); gap: 32px; }
+    .kr-steps::before { display: none; }
+    .kr-section-title { font-size: 30px; }
+    .kr-cta-section { padding: 70px 24px; }
+    .kr-cta-title { font-size: 34px; }
+    .kr-page-footer { padding: 24px 20px; }
+    .kr-stats-bar { padding: 0 24px; }
+  }
+  @media (max-width: 640px) {
+    .kr-benefits-grid { grid-template-columns: 1fr; }
+    .kr-roles-grid { grid-template-columns: 1fr; }
+    .kr-testi-grid { grid-template-columns: 1fr; }
+    .kr-testi-card:last-child { display: none; }
+    .kr-steps { grid-template-columns: 1fr; }
+    .kr-hero-title { font-size: 30px; }
   }
 `;
 
-function ApplicationModal({
-  isOpen,
-  onClose,
-  currentRole,
+/* ─────────────────────────────────────────────
+   COMPONENTS
+───────────────────────────────────────────────*/
+function RevealDiv({
+  children,
+  className = "",
+  delay = 0,
 }: {
-  isOpen: boolean;
-  onClose: () => void;
-  currentRole: RoleKey;
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
 }) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [fileName, setFileName] = useState("");
-  const [form, setForm] = useState<FormState>({
-    namaLengkap: "", nomorHP: "", email: "", tanggalLahir: "",
-    jenisKelamin: "", pengalaman: "", spesialisasi: "",
-    motivasi: "", portofolioLink: "", cvFile: null,
-  });
-
-  const role = roles[currentRole];
-
-  useEffect(() => {
-    if (isOpen) {
-      setIsSuccess(false);
-      setFileName("");
-      setForm({
-        namaLengkap: "", nomorHP: "", email: "", tanggalLahir: "",
-        jenisKelamin: "", pengalaman: "", spesialisasi: "",
-        motivasi: "", portofolioLink: "", cvFile: null,
-      });
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [onClose]);
-
-  useEffect(() => {
-    document.body.style.overflow = isOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [isOpen]);
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    setForm((prev) => ({ ...prev, cvFile: file }));
-    setFileName(file?.name ?? "");
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      const body = new FormData();
-      (Object.keys(form) as Array<keyof FormState>).forEach((k) => {
-        const v = form[k];
-        if (v !== null) body.append(k, v as string | Blob);
-      });
-      body.append("role", currentRole);
-      const res = await fetch("/api/contributor/apply", { method: "POST", body });
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        alert(json.message ?? "Gagal mengirim lamaran. Coba lagi.");
-        setIsSubmitting(false);
-        return;
-      }
-      setIsSuccess(true);
-    } catch (err) {
-      console.error("Submit error:", err);
-      alert("Terjadi kesalahan jaringan. Periksa koneksi Anda.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
+  const { ref, inView } = useInView();
+  const delayClass = delay ? `kr-reveal-delay-${delay}` : "";
   return (
-    <div
-      className={`rd-modal-overlay${isOpen ? " open" : ""}`}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="rd-modal">
-        {isSuccess && (
-          <div className="rd-success-modal">
-            <div className="rd-success-icon">✅</div>
-            <div className="rd-success-title">Lamaran Terkirim!</div>
-            <p className="rd-success-desc">
-              Terima kasih telah mendaftar sebagai kontributor.<br />
-              Tim kami akan meninjau aplikasi Anda. Jika lolos seleksi,{" "}
-              <strong>email beserta password akses</strong> akan dikirimkan ke email yang Anda daftarkan.
-            </p>
-            <button className="rd-success-close" onClick={onClose}>Tutup</button>
-          </div>
-        )}
-
-        {!isSuccess && (
-          <>
-            <div className="rd-modal-header">
-              <div>
-                <div className="rd-modal-role-badge">{role.modalBadge}</div>
-                <div className="rd-modal-title">
-                  Formulir Pendaftaran<br />Kontributor
-                </div>
-              </div>
-              <button className="rd-modal-close" onClick={onClose}>×</button>
-            </div>
-
-            <div className="rd-modal-notice">
-              <span className="rd-modal-notice-icon">⚠️</span>
-              <span>
-                Pendaftaran ini <strong>bukan langsung aktif</strong>. Anda akan melalui proses seleksi.
-                Jika diterima, akun beserta password akan dikirim ke email Anda.
-              </span>
-            </div>
-
-            <div className="rd-modal-body">
-              <form id="rd-apply-form" onSubmit={handleSubmit}>
-                <div className="rd-form-grid">
-                  <div className="rd-form-group">
-                    <label className="rd-form-label">Nama Lengkap <span>*</span></label>
-                    <input className="rd-form-input" name="namaLengkap" value={form.namaLengkap}
-                      onChange={handleChange} type="text" placeholder="Nama lengkap Anda" required />
-                  </div>
-                  <div className="rd-form-group">
-                    <label className="rd-form-label">Nomor HP / WA <span>*</span></label>
-                    <input className="rd-form-input" name="nomorHP" value={form.nomorHP}
-                      onChange={handleChange} type="tel" placeholder="08xx-xxxx-xxxx" required />
-                  </div>
-                  <div className="rd-form-group full">
-                    <label className="rd-form-label">Alamat Email <span>*</span></label>
-                    <input className="rd-form-input" name="email" value={form.email}
-                      onChange={handleChange} type="email" placeholder="contoh@email.com" required />
-                  </div>
-                  <div className="rd-form-group">
-                    <label className="rd-form-label">Tanggal Lahir <span>*</span></label>
-                    <input className="rd-form-input" name="tanggalLahir" value={form.tanggalLahir}
-                      onChange={handleChange} type="date" required />
-                  </div>
-                  <div className="rd-form-group">
-                    <label className="rd-form-label">Jenis Kelamin</label>
-                    <select className="rd-form-select" name="jenisKelamin" value={form.jenisKelamin}
-                      onChange={handleChange}>
-                      <option value="">Pilih...</option>
-                      <option>Laki-laki</option>
-                      <option>Perempuan</option>
-                    </select>
-                  </div>
-                  <div className="rd-form-group full">
-                    <label className="rd-form-label">{role.labelPengalaman} <span>*</span></label>
-                    <select className="rd-form-select" name="pengalaman" value={form.pengalaman}
-                      onChange={handleChange} required>
-                      <option value="">Pilih pengalaman...</option>
-                      <option>Kurang dari 1 tahun</option>
-                      <option>1–2 tahun</option>
-                      <option>2–5 tahun</option>
-                      <option>Lebih dari 5 tahun</option>
-                    </select>
-                  </div>
-                  <div className="rd-form-group full">
-                    <label className="rd-form-label">{role.labelSpesialisasi} <span>*</span></label>
-                    <input className="rd-form-input" name="spesialisasi" value={form.spesialisasi}
-                      onChange={handleChange} type="text"
-                      placeholder={role.placeholderSpesialisasi} required />
-                  </div>
-                  <div className="rd-form-group full">
-                    <label className="rd-form-label">Motivasi Bergabung <span>*</span></label>
-                    <textarea className="rd-form-textarea" name="motivasi" value={form.motivasi}
-                      onChange={handleChange}
-                      placeholder="Ceritakan motivasi Anda bergabung sebagai kontributor..."
-                      required />
-                  </div>
-                  <div className="rd-form-group full">
-                    <label className="rd-form-label">Link Portofolio / Tulisan</label>
-                    <input className="rd-form-input" name="portofolioLink" value={form.portofolioLink}
-                      onChange={handleChange} type="url" placeholder="https://..." />
-                  </div>
-                  <div className="rd-form-group full">
-                    <label className="rd-form-label">Upload CV / Portofolio</label>
-                    <div className="rd-upload-area">
-                      <input type="file" accept=".pdf,.doc,.docx" onChange={handleFile} />
-                      <div className="rd-upload-icon">📎</div>
-                      <div className="rd-upload-text">
-                        {fileName
-                          ? <strong>{fileName}</strong>
-                          : <><strong>Klik untuk upload</strong> atau seret file ke sini</>
-                        }
-                      </div>
-                      <div className="rd-upload-hint">PDF, DOC, DOCX · Maks. 5 MB</div>
-                    </div>
-                  </div>
-                </div>
-              </form>
-            </div>
-
-            <div className="rd-modal-footer">
-              <button className="rd-submit-btn" form="rd-apply-form" type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Mengirim..." : "Kirim Lamaran"}
-                {!isSubmitting && (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="22" y1="2" x2="11" y2="13" />
-                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                  </svg>
-                )}
-              </button>
-              <p className="rd-form-terms">
-                Dengan mendaftar, Anda menyetujui{" "}
-                <a href="#">Kebijakan Privasi</a> dan <a href="#">Ketentuan Kontributor</a> kami.
-              </p>
-            </div>
-          </>
-        )}
-      </div>
+    <div ref={ref} className={`kr-reveal ${delayClass} ${inView ? "visible" : ""} ${className}`}>
+      {children}
     </div>
   );
 }
 
-export default function RegisterPage() {
-  const [currentRole, setCurrentRole] = useState<RoleKey>("redaksi");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+/* ─────────────────────────────────────────────
+   PAGE
+───────────────────────────────────────────────*/
+export default function KarierPage() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [activeCard, setActiveCard] = useState(0);
 
-  const role = roles[currentRole];
-
-  const roleTabs: { key: RoleKey; icon: string; label: string }[] = [
-    { key: "redaksi", icon: "📋", label: "Redaksi / Redaktur" },
-    { key: "jurnalis", icon: "🎙️", label: "Jurnalis / Reporter" },
-    { key: "editor", icon: "✏️", label: "Editor" },
-  ];
-
-  const handleSwitchRole = (r: RoleKey) => {
-    setCurrentRole(r);
-    setTimeout(() => {
-      document.querySelector(".rd-content-area")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 50);
-  };
-
-  // Close mobile menu on outside click
   useEffect(() => {
-    const handler = () => setIsMobileMenuOpen(false);
-    if (isMobileMenuOpen) document.addEventListener("click", handler);
+    const timer = setInterval(() => {
+      setActiveCard((prev) => (prev + 1) % carouselCards.length);
+    }, 3500);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setMobileOpen(false);
+    if (mobileOpen) document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
-  }, [isMobileMenuOpen]);
+  }, [mobileOpen]);
 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-
-      <div className="rd-wrap">
+      <div className="kr-wrap">
 
         {/* ── NAVBAR ── */}
-        <nav className="rd-nav">
+        <nav className="kr-nav">
           <Link href="/" className="shrink-0">
             <Image
               src="/assets/NarasiKotaLogoBiru.webp"
               alt="NarasiKota"
-              width={220}
-              height={64}
+              width={220} height={64}
               className="h-16 ml-6 w-auto object-contain"
               priority
             />
           </Link>
-
-          <div className="rd-nav-links">
+          <div className="kr-nav-links">
             <Link href="/tentang-kami">Tentang Kami</Link>
             <a href="/tim-kami">Tim Kami</a>
-            <a href="#">Karier</a>
+            <a href="/karier">Karier</a>
             <a href="#">Kontak</a>
           </div>
-
-          <button className="rd-nav-cta" onClick={() => setIsModalOpen(true)}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <line x1="19" y1="8" x2="19" y2="14" />
-              <line x1="22" y1="11" x2="16" y2="11" />
+          <Link href="/kontributor" className="kr-nav-cta">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+              <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
             </svg>
             Daftar Kontributor
-          </button>
-
-          {/* Hamburger */}
+          </Link>
           <button
-            className={`rd-hamburger${isMobileMenuOpen ? " open" : ""}`}
-            onClick={(e) => { e.stopPropagation(); setIsMobileMenuOpen((v) => !v); }}
+            className={`kr-hamburger${mobileOpen ? " open" : ""}`}
+            onClick={(e) => { e.stopPropagation(); setMobileOpen(v => !v); }}
             aria-label="Toggle menu"
           >
-            <span />
-            <span />
-            <span />
+            <span /><span /><span />
           </button>
         </nav>
 
-        {/* Mobile Menu */}
-        <div
-          className={`rd-mobile-menu${isMobileMenuOpen ? " open" : ""}`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Link href="/tentang-kami" onClick={() => setIsMobileMenuOpen(false)}>Tentang Kami</Link>
-          <a href="/tim-kami" onClick={() => setIsMobileMenuOpen(false)}>Tim Kami</a>
-          <a href="#" onClick={() => setIsMobileMenuOpen(false)}>Karier</a>
-          <a href="#" onClick={() => setIsMobileMenuOpen(false)}>Kontak</a>
-          <button
-            className="rd-mobile-menu-cta"
-            onClick={() => { setIsMobileMenuOpen(false); setIsModalOpen(true); }}
-          >
+        <div className={`kr-mobile-menu${mobileOpen ? " open" : ""}`} onClick={(e) => e.stopPropagation()}>
+          <Link href="/tentang-kami" onClick={() => setMobileOpen(false)}>Tentang Kami</Link>
+          <a href="/tim-kami" onClick={() => setMobileOpen(false)}>Tim Kami</a>
+          <a href="/karier" onClick={() => setMobileOpen(false)}>Karier</a>
+          <a href="#" onClick={() => setMobileOpen(false)}>Kontak</a>
+          <Link href="/karier" className="kr-mobile-menu-cta" onClick={() => setMobileOpen(false)}>
             Daftar Kontributor
-          </button>
+          </Link>
         </div>
 
         {/* ── BREADCRUMB ── */}
-        <div className="rd-breadcrumb">
-          <a href="#">Beranda</a>
-          <span className="rd-breadcrumb-sep">›</span>
-          <a href="#">Kontributor</a>
-          <span className="rd-breadcrumb-sep">›</span>
-          <span>{role.bcRole}</span>
+        <div className="kr-breadcrumb">
+          <a href="">Beranda</a>
+          <span className="kr-breadcrumb-sep">›</span>
+          <span>Karier</span>
         </div>
 
-        {/* ── MAIN WRAP ── */}
-        <div className="rd-main-wrap">
+        {/* ── HERO ── */}
+        <section className="kr-hero">
+          <div className="kr-hero-bg" />
+          <div className="kr-hero-grid" />
+          <div className="kr-hero-inner">
 
-          {/* ── SIDEBAR ── */}
-          <aside className="rd-sidebar">
-            <div className="rd-sidebar-card">
-              <div className="rd-role-title">{role.sidebarTitle}</div>
-
-              <div className="rd-role-meta">
-                <div className="rd-meta-item">
-                  <div className="rd-meta-icon">
-                    <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" /></svg>
-                  </div>
-                  <div>
-                    <div className="rd-meta-label">Tipe</div>
-                    <div className="rd-meta-value">Kontributor Lepas</div>
-                  </div>
-                </div>
-                <div className="rd-meta-item">
-                  <div className="rd-meta-icon">
-                    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-                  </div>
-                  <div>
-                    <div className="rd-meta-label">Divisi</div>
-                    <div className="rd-meta-value">Tim Redaksi</div>
-                  </div>
-                </div>
-                <div className="rd-meta-item">
-                  <div className="rd-meta-icon">
-                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                  </div>
-                  <div>
-                    <div className="rd-meta-label">Min. Usia</div>
-                    <div className="rd-meta-value">{role.sidebarAge}</div>
-                  </div>
-                </div>
-                <div className="rd-meta-item">
-                  <div className="rd-meta-icon">
-                    <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
-                  </div>
-                  <div>
-                    <div className="rd-meta-label">Sistem Kerja</div>
-                    <div className="rd-meta-value">Remote / WFA</div>
-                  </div>
-                </div>
+            {/* Left */}
+            <div>
+              <div className="kr-hero-eyebrow">
+                <div className="kr-hero-eyebrow-dot" />
+                Bergabung Bersama Kami
               </div>
-
-              <button className="rd-apply-btn" onClick={() => setIsModalOpen(true)}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" /><polyline points="12 8 16 12 12 16" /><line x1="8" y1="12" x2="16" y2="12" />
-                </svg>
-                Ajukan Kontributor
-              </button>
-
-              <div className="rd-selection-notice">
-                ⚠️{" "}
-                <strong>Pendaftaran melalui seleksi.</strong>{" "}
-                Anda tidak langsung mendapat akses. Jika lolos seleksi, email &amp; password akan dikirim ke email Anda.
+              <h1 className="kr-hero-title">
+                Jadilah Bagian dari<br />
+                <em>Media Masa Depan</em>
+              </h1>
+              <p className="kr-hero-desc">
+                NarasiKota membuka peluang bagi Anda untuk berkontribusi, berkembang,
+                dan membangun karier di dunia jurnalisme digital. Bukan sekadar menulis —
+                tapi menciptakan dampak nyata bagi jutaan pembaca.
+              </p>
+              <div className="kr-hero-actions">
+                <Link href="/karier" className="kr-btn-primary">
+                  Daftar Sekarang
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                  </svg>
+                </Link>
+                <a href="#benefits" className="kr-btn-secondary">
+                  Lihat Keuntungan
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </a>
               </div>
+            </div>
 
-              <div className="rd-role-switcher">
-                <div className="rd-role-switcher-label">Pilih Role Lain</div>
-                <div className="rd-role-btn-group">
-                  {roleTabs.map(({ key, icon, label }) => (
+            {/* Right: Carousel */}
+            <div className="kr-hero-visual">
+              <div className="kr-carousel-wrap">
+
+                <div className="kr-carousel-track">
+                  {carouselCards.map((card, i) => {
+                    const prevIndex = (activeCard - 1 + carouselCards.length) % carouselCards.length;
+                    const state = i === activeCard ? "active" : i === prevIndex ? "prev" : "next";
+                    return (
+                      <div
+                        key={i}
+                        className={`kr-carousel-card ${state}`}
+                        style={{
+                          "--c-accent": card.accent,
+                          "--c-accent-light": card.accentLight,
+                        } as React.CSSProperties}
+                      >
+                        {/* Top */}
+                        <div className="kr-carousel-top">
+                          <span className="kr-carousel-label">{card.label}</span>
+                          <span className="kr-carousel-tag">{card.tag}</span>
+                        </div>
+
+                        {/* Main */}
+                        <div>
+                          {card.value && (
+                            <div className="kr-carousel-value-row">
+                              <span className="kr-carousel-value">{card.value}</span>
+                              {card.unit && <span className="kr-carousel-unit">{card.unit}</span>}
+                            </div>
+                          )}
+                          {card.badge && (
+                            <div className="kr-carousel-badge">{card.badge}</div>
+                          )}
+                          {card.extra && (
+                            <div className="kr-carousel-extra">{card.extra}</div>
+                          )}
+                        </div>
+
+                        {/* Bottom */}
+                        <div>
+                          <div className="kr-carousel-divider" />
+                          <span className="kr-carousel-sub">{card.sub}</span>
+                        </div>
+
+                        <div className="kr-carousel-bar" />
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Dots only — no progress bar */}
+                <div className="kr-carousel-dots">
+                  {carouselCards.map((_, i) => (
                     <button
-                      key={key}
-                      className={`rd-role-tab${currentRole === key ? " active" : ""}`}
-                      onClick={() => handleSwitchRole(key)}
-                    >
-                      <span className="rd-tab-icon">{icon}</span>
-                      {label}
-                    </button>
+                      key={i}
+                      className={`kr-carousel-dot ${i === activeCard ? "active" : ""}`}
+                      onClick={() => setActiveCard(i)}
+                      aria-label={`Tampilkan card ${i + 1}`}
+                    />
                   ))}
                 </div>
+
               </div>
             </div>
-          </aside>
 
-          {/* ── MAIN CONTENT ── */}
-          <main className="rd-content-area">
-            <div className="rd-section-head">
-              <div className="rd-badge">{role.badge}</div>
-              <h1 className="rd-page-title" dangerouslySetInnerHTML={{ __html: role.mainTitle }} />
-              <p className="rd-page-desc">{role.mainDesc}</p>
+          </div>
+        </section>
+
+        {/* ── STATS BAR ── */}
+        <div className="kr-stats-bar">
+          <div className="kr-stats-inner">
+            {stats.map((s, i) => (
+              <div key={i} className="kr-stat-item">
+                <div className="kr-stat-value">{s.value}</div>
+                <div className="kr-stat-label">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── BENEFITS ── */}
+        <section className="kr-section kr-benefits-section" id="benefits">
+          <div className="kr-section-inner">
+            <RevealDiv>
+              <div className="kr-section-head-center" style={{ textAlign: 'center' }}>
+                <div className="kr-section-eyebrow">🎁 Keuntungan Kontributor</div>
+                <h2 className="kr-section-title">Kenapa Harus Bergabung?</h2>
+                <p className="kr-section-desc">
+                  Lebih dari sekadar platform menulis — NarasiKota adalah ekosistem yang
+                  dirancang untuk menghargai, mengembangkan, dan memajukan setiap kontributornya.
+                </p>
+              </div>
+            </RevealDiv>
+            <div className="kr-benefits-grid">
+              {benefits.map((b, i) => (
+                <RevealDiv key={i} delay={((i % 3) + 1) as 1 | 2 | 3}>
+                  <div className="kr-benefit-card" style={{ "--card-color": b.color } as React.CSSProperties}>
+                    <div className="kr-benefit-icon">{b.icon}</div>
+                    <div className="kr-benefit-title">{b.title}</div>
+                    <p className="kr-benefit-desc">{b.desc}</p>
+                    <ul className="kr-benefit-items">
+                      {b.items.map((item, j) => <li key={j}>{item}</li>)}
+                    </ul>
+                  </div>
+                </RevealDiv>
+              ))}
             </div>
+          </div>
+        </section>
 
-            <div className="rd-content-card">
-              <div className="rd-card-section-title">Tentang Peran</div>
-              <p className="rd-role-desc">{role.descPeran}</p>
-            </div>
-
-            <div className="rd-content-card">
-              <div className="rd-card-section-title">Tanggung Jawab</div>
-              <ul className="rd-spec-list">
-                {role.tanggungJawab.map((item, i) => <li key={i}>{item}</li>)}
-              </ul>
-            </div>
-
-            <div className="rd-content-card">
-              <div className="rd-card-section-title">Persyaratan</div>
-              <ul className="rd-spec-list">
-                {role.persyaratan.map((item, i) => <li key={i}>{item}</li>)}
-              </ul>
-            </div>
-
-            <div className="rd-content-card">
-              <div className="rd-card-section-title">Kualifikasi Tambahan (Diutamakan)</div>
-              <ul className="rd-spec-list">
-                {role.kualifikasi.map((item, i) => <li key={i}>{item}</li>)}
-              </ul>
-              <div className="rd-divider" />
-              <div className="rd-extra-badge-row">
-                {role.badges.map((b) => (
-                  <span key={b} className="rd-extra-badge">{b}</span>
+        {/* ── HOW IT WORKS ── */}
+        <section className="kr-section kr-how-section">
+          <div className="kr-section-inner">
+            <RevealDiv>
+              <div className="kr-section-head-center" style={{ textAlign: 'center' }}>
+                <div className="kr-section-eyebrow">🗺️ Cara Bergabung</div>
+                <h2 className="kr-section-title">Proses yang Mudah & Transparan</h2>
+                <p className="kr-section-desc">
+                  Hanya 4 langkah untuk mulai berkontribusi dan meraih keuntungan bersama NarasiKota.
+                </p>
+              </div>
+            </RevealDiv>
+            <RevealDiv delay={1}>
+              <div className="kr-steps">
+                {[
+                  { n: "1", title: "Pilih Role", desc: "Tentukan peran yang sesuai dengan kemampuan Anda: Jurnalis, Editor, atau Redaktur." },
+                  { n: "2", title: "Isi Formulir", desc: "Lengkapi formulir pendaftaran beserta portofolio dan motivasi bergabung Anda." },
+                  { n: "3", title: "Seleksi Tim", desc: "Tim kami akan meninjau lamaran Anda dalam 3–7 hari kerja secara profesional." },
+                  { n: "4", title: "Mulai Berkontribusi", desc: "Setelah diterima, akun aktif Anda akan dikirim via email dan siap digunakan." },
+                ].map((step, i) => (
+                  <div key={i} className="kr-step">
+                    <div className="kr-step-num">{step.n}</div>
+                    <div className="kr-step-title">{step.title}</div>
+                    <p className="kr-step-desc">{step.desc}</p>
+                  </div>
                 ))}
               </div>
+            </RevealDiv>
+          </div>
+        </section>
+
+        {/* ── ROLES ── */}
+        <section className="kr-section kr-roles-section">
+          <div className="kr-section-inner">
+            <RevealDiv>
+              <div className="kr-section-head-center" style={{ textAlign: 'center' }}>
+                <div className="kr-section-eyebrow">👥 Posisi Tersedia</div>
+                <h2 className="kr-section-title">Temukan Role yang Tepat</h2>
+                <p className="kr-section-desc">
+                  Pilih posisi yang paling sesuai dengan keahlian dan passion Anda dalam dunia jurnalisme.
+                </p>
+              </div>
+            </RevealDiv>
+            <div className="kr-roles-grid">
+              {roles.map((r, i) => (
+                <RevealDiv key={i} delay={(i + 1) as 1 | 2 | 3}>
+                  <div className="kr-role-card">
+                    <div className="kr-role-icon">{r.icon}</div>
+                    <div className="kr-role-card-title">{r.title}</div>
+                    <p className="kr-role-card-desc">{r.desc}</p>
+                    <div className="kr-role-meta-row">
+                      <span className="kr-role-age-badge">Min. {r.age}</span>
+                      <span style={{ fontSize: 12, color: '#9AA3B2' }}>• Remote / WFA</span>
+                    </div>
+                    <div className="kr-role-tags">
+                      {r.tags.map((tag) => (
+                        <span key={tag} className="kr-role-tag">{tag}</span>
+                      ))}
+                    </div>
+                    <Link href={r.href} className="kr-role-link">
+                      Lihat Detail & Daftar
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                      </svg>
+                    </Link>
+                  </div>
+                </RevealDiv>
+              ))}
             </div>
+          </div>
+        </section>
 
-            <p className="rd-footer-link">
-              Sudah punya akun?{" "}
-              <Link href="/login">Login di sini</Link>
-            </p>
-          </main>
-        </div>
+        {/* ── TESTIMONIALS ── */}
+        <section className="kr-section kr-testi-section">
+          <div className="kr-section-inner">
+            <RevealDiv>
+              <div className="kr-section-head-center" style={{ textAlign: 'center' }}>
+                <div className="kr-section-eyebrow">💬 Cerita Kontributor</div>
+                <h2 className="kr-section-title">Kata Mereka yang Sudah Bergabung</h2>
+                <p className="kr-section-desc">
+                  Ribuan kontributor telah merasakan manfaat nyata bergabung bersama ekosistem NarasiKota.
+                </p>
+              </div>
+            </RevealDiv>
+            <div className="kr-testi-grid">
+              {testimonials.map((t, i) => (
+                <RevealDiv key={i} delay={(i + 1) as 1 | 2 | 3}>
+                  <div className="kr-testi-card">
+                    <p className="kr-testi-quote">{t.quote}</p>
+                    <div className="kr-testi-author">
+                      <div className="kr-testi-avatar">{t.avatar}</div>
+                      <div>
+                        <div className="kr-testi-name">{t.name}</div>
+                        <div className="kr-testi-role-label">{t.role}</div>
+                      </div>
+                    </div>
+                  </div>
+                </RevealDiv>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── CTA ── */}
+        <section className="kr-cta-section">
+          <RevealDiv>
+            <div className="kr-cta-inner">
+              <h2 className="kr-cta-title">
+                Siap untuk Mulai<br />
+                <em>Berkontribusi?</em>
+              </h2>
+              <p className="kr-cta-desc">
+                Bergabunglah dengan ratusan kontributor aktif NarasiKota. Daftarkan diri Anda sekarang dan
+                jadilah bagian dari gerakan jurnalisme yang bermakna.
+              </p>
+              <div className="kr-cta-actions">
+                <Link href="/karier" className="kr-btn-primary">
+                  Daftar Sebagai Kontributor
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                  </svg>
+                </Link>
+                <a href="mailto:redaksi@narasikota.com" className="kr-btn-secondary">
+                  Tanya Lebih Lanjut
+                </a>
+              </div>
+              <p className="kr-cta-note">
+                ⚠️ Pendaftaran melalui proses seleksi. Akun aktif dikirim via email setelah diterima.
+              </p>
+            </div>
+          </RevealDiv>
+        </section>
+
+        {/* ── FOOTER ── */}
+        <footer className="kr-page-footer">
+          © 2025 NarasiKota. Sudah punya akun?{" "}
+          <Link href="/login">Login di sini</Link>
+          {" "}·{" "}
+          <a href="#">Kebijakan Privasi</a>
+          {" "}·{" "}
+          <a href="#">Ketentuan Layanan</a>
+        </footer>
+
       </div>
-
-      <ApplicationModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        currentRole={currentRole}
-      />
     </>
   );
 }

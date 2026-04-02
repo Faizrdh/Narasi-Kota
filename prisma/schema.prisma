@@ -32,18 +32,19 @@ enum Priority {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String    @unique
-  password      String
-  role          UserRole  @default(USER)
-  image         String?
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole @default(USER)
+  image     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   sessions             Session[]
   refreshTokens        RefreshToken[]
+  passwordResetTokens  PasswordResetToken[]   // ← TAMBAHAN
   articles             Article[]
   reporterWorkflows    ArticleWorkflow[] @relation("reporter")
   editorWorkflows      ArticleWorkflow[] @relation("editor")
@@ -58,7 +59,8 @@ model Session {
   token     String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
 }
@@ -69,34 +71,50 @@ model RefreshToken {
   token     String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
 }
 
+// ── MODEL BARU untuk Forgot Password OTP ──────────────────────
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @db.Text   // Disimpan sebagai SHA-256 hash
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
 model Article {
-  id          String     @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
-  slug        String     @unique
+  slug        String    @unique
   body        String
   excerpt     String?
   image       String?
   detailImage String?
   detailVideo String?
   category    String
-  status      String     @default("draft")
-  views       Int        @default(0)
-  likes       Int        @default(0)        // ← BARU
+  status      String    @default("draft")
+  views       Int       @default(0)
+  likes       Int       @default(0)
   authorId    String
-  author      User       @relation(fields: [authorId], references: [id])
   publishedAt DateTime?
   scheduledAt DateTime?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
+  author      User                @relation(fields: [authorId], references: [id])
   pageViews   PageView[]
   impressions ArticleImpression[]
-  ArticleLike ArticleLike[]       // ← BARU
+  ArticleLike ArticleLike[]
 
   @@index([status, scheduledAt])
   @@map("articles")
@@ -105,12 +123,13 @@ model Article {
 model PageView {
   id          String   @id @default(cuid())
   articleId   String
-  article     Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
   visitorId   String
   timeSpent   Int      @default(0)
   scrollDepth Int      @default(0)
   completed   Boolean  @default(false)
   createdAt   DateTime @default(now())
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
 
   @@index([articleId])
   @@index([visitorId])
@@ -121,9 +140,10 @@ model PageView {
 model ArticleImpression {
   id        String   @id @default(cuid())
   articleId String
-  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
   visitorId String?
   createdAt DateTime @default(now())
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
 
   @@unique([articleId, visitorId])
   @@index([articleId])
@@ -131,14 +151,13 @@ model ArticleImpression {
   @@map("article_impressions")
 }
 
-// ── MODEL BARU untuk sistem Dukung Naik ───────────────────────
 model ArticleLike {
   id        String   @id @default(cuid())
   articleId String
   visitorId String
   createdAt DateTime @default(now())
 
-  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
 
   @@unique([articleId, visitorId])
   @@index([articleId])
@@ -155,25 +174,27 @@ model ArticleWorkflow {
   priority       Priority       @default(SEDANG)
   deadline       DateTime?
   reporterId     String?
-  reporter       User?          @relation("reporter", fields: [reporterId], references: [id])
   editorId       String?
-  editor         User?          @relation("editor", fields: [editorId], references: [id])
-  activityLogs   ActivityLog[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+
+  reporter     User?         @relation("reporter", fields: [reporterId], references: [id])
+  editor       User?         @relation("editor", fields: [editorId], references: [id])
+  activityLogs ActivityLog[]
 
   @@map("article_workflows")
 }
 
 model ActivityLog {
-  id         String          @id @default(cuid())
+  id         String   @id @default(cuid())
   action     String
   actorName  String
   actorId    String?
-  actor      User?           @relation(fields: [actorId], references: [id])
   workflowId String
-  workflow   ArticleWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
-  createdAt  DateTime        @default(now())
+  createdAt  DateTime @default(now())
+
+  actor    User?           @relation(fields: [actorId], references: [id])
+  workflow ArticleWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 
   @@map("activity_logs")
 }

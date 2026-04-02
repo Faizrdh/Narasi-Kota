@@ -565,7 +565,7 @@ export default function TentangKamiPage() {
         >
           <a href="/tentang-kami" className="active" onClick={() => setIsMobileMenuOpen(false)}>Tentang Kami</a>
           <a href="/tim-kami" onClick={() => setIsMobileMenuOpen(false)}>Tim Kami</a>
-          <a href="#" onClick={() => setIsMobileMenuOpen(false)}>Karier</a>
+          <a href="/karier" onClick={() => setIsMobileMenuOpen(false)}>Karier</a>
           <a href="#" onClick={() => setIsMobileMenuOpen(false)}>Kontak</a>
           <Link href="/register" className="tk-mobile-menu-cta" onClick={() => setIsMobileMenuOpen(false)}>
             Daftar Kontributor
