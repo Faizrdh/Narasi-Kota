@@ -20,6 +20,12 @@
 # production
 /build
 
+# Google Cloud credentials
+*.json
+# atau lebih spesifik:
+narasi-kota-*.json
+narasi-kota-3050db0cb64e.json
+
 # misc
 .DS_Store
 *.pem
