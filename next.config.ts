@@ -1,15 +1,8 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig & {
-  eslint?: {
-    ignoreDuringBuilds?: boolean;
-  };
-} = {
+const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
   },
 };
 
