@@ -44,7 +44,7 @@ export async function GET() {
         name,
         email,
         password: hashedPassword,
-        role: "admin" as never,      // ← role admin
+        role: "SUPER_ADMIN" as never,      // ← role admin
         isActive: true,
       },
     });
