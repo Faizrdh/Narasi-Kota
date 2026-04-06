@@ -30,7 +30,7 @@ export async function GET() {
         name: "Test User",
         email: "test@example.com",
         password: hashedPassword,
-        role: "user",
+        role: "USER",
         isActive: true,
       },
     });

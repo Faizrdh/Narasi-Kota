@@ -4,8 +4,9 @@ import { getCurrentUser } from "@/lib/auth-server";
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -17,7 +18,6 @@ export async function PATCH(
       return NextResponse.json({ success: false, message: "Akses ditolak" }, { status: 403 });
     }
 
-    const { id } = await params;
     const body = await request.json() as { status: string; catatanAdmin?: string };
     const { status, catatanAdmin } = body;
 
@@ -55,8 +55,9 @@ export async function PATCH(
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -69,7 +70,7 @@ export async function GET(
     }
 
     const application = await prisma.contributorApplication.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!application) {

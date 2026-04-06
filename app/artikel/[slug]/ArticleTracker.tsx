@@ -12,7 +12,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { trackEvent } from "@/components/GoogleAnalytics";
+import { trackEvent } from "../../../lib/google-analytics";
 
 interface Props {
   slug: string;

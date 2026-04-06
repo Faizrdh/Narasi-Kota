@@ -17,10 +17,10 @@ export async function GET() {
 
     if (existing) {
       // Jika ada tapi role-nya bukan admin → upgrade
-      if (existing.role !== "admin") {
+      if (existing.role as string !== "admin") {
         await prisma.user.update({
           where: { email },
-          data: { role: "admin", isActive: true },
+          data: { role: "admin" as never, isActive: true },
         });
         return NextResponse.json({
           success: true,
@@ -44,7 +44,7 @@ export async function GET() {
         name,
         email,
         password: hashedPassword,
-        role: "admin",      // ← role admin
+        role: "admin" as never,      // ← role admin
         isActive: true,
       },
     });

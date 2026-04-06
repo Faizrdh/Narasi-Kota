@@ -78,6 +78,16 @@ export interface GA4TrendPoint {
   views: number;
   label: string;  // label tampilan: "15 Mar", "Jan '25", dll
 }
+// Tambahkan fungsi ini di lib/google-analytics.ts
+
+export const trackEvent = (
+  eventName: string,
+  parameters?: Record<string, string | number | boolean>
+) => {
+  if (typeof window !== "undefined" && typeof window.gtag !== "undefined") {
+    window.gtag("event", eventName, parameters);
+  }
+};
 
 export async function getGA4TrendData(
   period: "today" | "7d" | "30d" | "90d" | "12m" | "all"

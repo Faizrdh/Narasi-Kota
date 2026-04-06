@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         email: email.toLowerCase(),
         password: hashedPassword,
-        role: "user",
+        role: "USER",
         isActive: true,
       },
     });

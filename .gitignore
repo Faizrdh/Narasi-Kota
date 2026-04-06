@@ -20,11 +20,10 @@
 # production
 /build
 
-# Google Cloud credentials
-*.json
-# atau lebih spesifik:
+# Google Cloud credentials — spesifik, jangan *.json!
 narasi-kota-*.json
-narasi-kota-3050db0cb64e.json
+*-service-account.json
+google-credentials.json
 
 # misc
 .DS_Store
@@ -36,7 +35,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
 
 # vercel
@@ -46,4 +45,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# prisma
 /app/generated/prisma
+prisma.config.ts
