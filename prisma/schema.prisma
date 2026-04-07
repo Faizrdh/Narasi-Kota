@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
@@ -43,13 +43,13 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sessions             Session[]
-  refreshTokens        RefreshToken[]
-  passwordResetTokens  PasswordResetToken[]   // ← TAMBAHAN
-  articles             Article[]
-  reporterWorkflows    ArticleWorkflow[] @relation("reporter")
-  editorWorkflows      ArticleWorkflow[] @relation("editor")
-  activityLogs         ActivityLog[]
+  sessions            Session[]
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  articles            Article[]
+  reporterWorkflows   ArticleWorkflow[] @relation("reporter")
+  editorWorkflows     ArticleWorkflow[] @relation("editor")
+  activityLogs        ActivityLog[]
 
   @@map("users")
 }
@@ -78,11 +78,10 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
-// ── MODEL BARU untuk Forgot Password OTP ──────────────────────
 model PasswordResetToken {
   id        String    @id @default(cuid())
   userId    String
-  token     String    @db.Text   // Disimpan sebagai SHA-256 hash
+  token     String    @db.Text
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())
